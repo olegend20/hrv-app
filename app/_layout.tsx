@@ -13,9 +13,7 @@ export {
   ErrorBoundary,
 } from 'expo-router';
 
-export const unstable_settings = {
-  initialRouteName: '(tabs)',
-};
+// Removed initialRouteName - navigation is handled by useEffect below
 
 SplashScreen.preventAutoHideAsync();
 
@@ -54,10 +52,18 @@ function RootLayoutNav() {
     if (!hasHydrated) return;
 
     const inOnboarding = segments[0] === 'onboarding';
+    const inTabs = segments[0] === '(tabs)';
 
+    // If no profile, redirect to onboarding
     if (!profile && !inOnboarding) {
       router.replace('/onboarding');
-    } else if (profile && inOnboarding) {
+    }
+    // If has profile but in onboarding, go to tabs
+    else if (profile && inOnboarding) {
+      router.replace('/(tabs)');
+    }
+    // If has profile and not in tabs yet, go to tabs
+    else if (profile && !inTabs && !inOnboarding) {
       router.replace('/(tabs)');
     }
   }, [profile, hasHydrated, segments]);
@@ -67,6 +73,7 @@ function RootLayoutNav() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+        <Stack.Screen name="import" options={{ headerShown: true, title: 'Import Data' }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
