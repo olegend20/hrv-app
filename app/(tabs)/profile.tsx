@@ -9,9 +9,11 @@ import {
 } from 'react-native';
 import { TodaysFocus } from '@/components/TodaysFocus';
 import { ProgressIndicator } from '@/components/ProgressIndicator';
+import { WhoopAuthButton } from '@/components/WhoopAuthButton';
 import { useUserStore } from '@/stores/userStore';
 import { useHrvStore } from '@/stores/hrvStore';
 import { useHabitStore } from '@/stores/habitStore';
+import { useWhoopAuthStore } from '@/stores/whoopAuthStore';
 import { analyzeAllHabits, rankByImpact } from '@/lib/correlations/analyzer';
 import {
   generateRecommendations,
@@ -35,6 +37,8 @@ export default function ProfileScreen() {
   const readings = useHrvStore((state) => state.readings);
   const habits = useHabitStore((state) => state.entries);
   const getHabitByDate = useHabitStore((state) => state.getEntryByDate);
+
+  const isWhoopConnected = useWhoopAuthStore((state) => state.isAuthenticated);
 
   const [showGoalPicker, setShowGoalPicker] = useState(false);
 
@@ -112,6 +116,17 @@ export default function ProfileScreen() {
             {profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1)}
           </Text>
         </View>
+      </View>
+
+      {/* WHOOP Connection */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>WHOOP Integration</Text>
+        <WhoopAuthButton />
+        {isWhoopConnected && (
+          <Text style={styles.whoopHint}>
+            Your HRV data will sync automatically. You can still import CSV files manually.
+          </Text>
+        )}
       </View>
 
       {/* Today's Focus */}
@@ -340,5 +355,12 @@ const styles = StyleSheet.create({
   version: {
     color: '#999',
     fontSize: 12,
+  },
+  whoopHint: {
+    marginTop: 12,
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
