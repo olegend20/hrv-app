@@ -83,9 +83,8 @@ export function OnboardingForm({ onComplete }: OnboardingFormProps) {
             </View>
 
             <TouchableOpacity
-              style={[styles.button, !age && styles.buttonDisabled]}
+              style={styles.button}
               onPress={handleAgeSubmit}
-              disabled={!age}
             >
               <Text style={styles.buttonText}>Continue</Text>
             </TouchableOpacity>
