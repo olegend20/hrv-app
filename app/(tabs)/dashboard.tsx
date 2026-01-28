@@ -3,15 +3,24 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-nati
 import { Link } from 'expo-router';
 import { HRVChart } from '@/components/HRVChart';
 import { StatsCard } from '@/components/StatsCard';
+import { LogTodayPrompt } from '@/components/LogTodayPrompt';
 import { useHrvStore } from '@/stores/hrvStore';
 import { useUserStore } from '@/stores/userStore';
+import { useHabitStore } from '@/stores/habitStore';
 import { calculateStatistics, calculateChange, getReadingsForLastDays } from '@/lib/hrv/statistics';
 import { getPercentile, getOrdinalSuffix } from '@/lib/hrv/percentile';
 import { getBenchmark } from '@/constants/benchmarks';
 
+function getTodayDate(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
 export default function DashboardScreen() {
   const readings = useHrvStore((state) => state.readings);
   const profile = useUserStore((state) => state.profile);
+  const getHabitByDate = useHabitStore((state) => state.getEntryByDate);
+
+  const todayHabitLogged = !!getHabitByDate(getTodayDate());
 
   const stats = calculateStatistics(readings);
 
@@ -52,6 +61,9 @@ export default function DashboardScreen() {
         </View>
       ) : (
         <>
+          {/* Log Today Prompt */}
+          {!todayHabitLogged && <LogTodayPrompt />}
+
           {/* Current HRV Card */}
           <View style={styles.currentHrvCard}>
             <Text style={styles.currentHrvLabel}>Your HRV Today</Text>
