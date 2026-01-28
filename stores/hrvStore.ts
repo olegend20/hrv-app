@@ -2,16 +2,22 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HRVReading } from '@/types';
+import { fetchWhoopHRVData } from '@/lib/whoop/api';
+import { useWhoopAuthStore } from './whoopAuthStore';
 
 interface HrvState {
   readings: HRVReading[];
   hasHydrated: boolean;
+  lastSyncTime: number | null;
+  isSyncing: boolean;
+  syncError: string | null;
   importReadings: (newReadings: HRVReading[]) => number;
   getReadingByDate: (date: string) => HRVReading | undefined;
   getReadingsByDateRange: (startDate: string, endDate: string) => HRVReading[];
   getLatestReading: () => HRVReading | undefined;
   clearReadings: () => void;
   setHasHydrated: (state: boolean) => void;
+  syncWhoopData: (daysBack?: number) => Promise<number>;
 }
 
 export const useHrvStore = create<HrvState>()(
@@ -19,6 +25,9 @@ export const useHrvStore = create<HrvState>()(
     (set, get) => ({
       readings: [],
       hasHydrated: false,
+      lastSyncTime: null,
+      isSyncing: false,
+      syncError: null,
 
       importReadings: (newReadings: HRVReading[]) => {
         const currentReadings = get().readings;
@@ -68,6 +77,51 @@ export const useHrvStore = create<HrvState>()(
 
       setHasHydrated: (state: boolean) => {
         set({ hasHydrated: state });
+      },
+
+      syncWhoopData: async (daysBack = 30) => {
+        const whoopStore = useWhoopAuthStore.getState();
+
+        if (!whoopStore.isAuthenticated || !whoopStore.accessToken) {
+          throw new Error('Not connected to WHOOP');
+        }
+
+        set({ isSyncing: true, syncError: null });
+
+        try {
+          // Calculate date range
+          const endDate = new Date().toISOString().split('T')[0];
+          const startDate = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split('T')[0];
+
+          // Fetch data from WHOOP
+          const whoopReadings = await fetchWhoopHRVData(
+            startDate,
+            endDate,
+            whoopStore.accessToken
+          );
+
+          // Import into store
+          const importedCount = get().importReadings(whoopReadings);
+
+          // Update sync time
+          set({
+            isSyncing: false,
+            lastSyncTime: Date.now(),
+            syncError: null,
+          });
+
+          return importedCount;
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Sync failed';
+          set({
+            isSyncing: false,
+            syncError: errorMessage,
+          });
+          throw error;
+        }
       },
     }),
     {

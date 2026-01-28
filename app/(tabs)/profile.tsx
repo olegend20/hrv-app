@@ -10,6 +10,7 @@ import {
 import { TodaysFocus } from '@/components/TodaysFocus';
 import { ProgressIndicator } from '@/components/ProgressIndicator';
 import { WhoopAuthButton } from '@/components/WhoopAuthButton';
+import { SyncButton } from '@/components/SyncButton';
 import { useUserStore } from '@/stores/userStore';
 import { useHrvStore } from '@/stores/hrvStore';
 import { useHabitStore } from '@/stores/habitStore';
@@ -123,9 +124,14 @@ export default function ProfileScreen() {
         <Text style={styles.sectionTitle}>WHOOP Integration</Text>
         <WhoopAuthButton />
         {isWhoopConnected && (
-          <Text style={styles.whoopHint}>
-            Your HRV data will sync automatically. You can still import CSV files manually.
-          </Text>
+          <>
+            <Text style={styles.whoopHint}>
+              Your HRV data will sync automatically every 6 hours
+            </Text>
+            <View style={styles.syncButtonContainer}>
+              <SyncButton />
+            </View>
+          </>
         )}
       </View>
 
@@ -362,5 +368,8 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  syncButtonContainer: {
+    marginTop: 16,
   },
 });

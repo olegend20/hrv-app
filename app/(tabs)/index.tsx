@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
 import { HRVChart } from '@/components/HRVChart';
 import { StatsCard } from '@/components/StatsCard';
 import { LogTodayPrompt } from '@/components/LogTodayPrompt';
+import { SyncButton } from '@/components/SyncButton';
 import { useHrvStore } from '@/stores/hrvStore';
 import { useUserStore } from '@/stores/userStore';
 import { useHabitStore } from '@/stores/habitStore';
+import { useWhoopAuthStore } from '@/stores/whoopAuthStore';
 import { calculateStatistics, calculateChange, getReadingsForLastDays } from '@/lib/hrv/statistics';
 import { getPercentile, getOrdinalSuffix } from '@/lib/hrv/percentile';
 import { getBenchmark } from '@/constants/benchmarks';
@@ -19,8 +21,27 @@ export default function DashboardScreen() {
   const readings = useHrvStore((state) => state.readings);
   const profile = useUserStore((state) => state.profile);
   const getHabitByDate = useHabitStore((state) => state.getEntryByDate);
+  const syncWhoopData = useHrvStore((state) => state.syncWhoopData);
+  const lastSyncTime = useHrvStore((state) => state.lastSyncTime);
+  const isWhoopConnected = useWhoopAuthStore((state) => state.isAuthenticated);
 
   const todayHabitLogged = !!getHabitByDate(getTodayDate());
+
+  // Auto-sync on app launch if connected and not synced recently
+  useEffect(() => {
+    if (isWhoopConnected && readings.length > 0) {
+      const now = Date.now();
+      const sixHoursAgo = now - 6 * 60 * 60 * 1000;
+
+      // Auto-sync if never synced or last sync was > 6 hours ago
+      if (!lastSyncTime || lastSyncTime < sixHoursAgo) {
+        syncWhoopData(30).catch((error) => {
+          console.log('Auto-sync failed:', error);
+          // Silently fail for auto-sync
+        });
+      }
+    }
+  }, [isWhoopConnected]);
 
   const stats = calculateStatistics(readings);
 
@@ -44,7 +65,10 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Dashboard</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Dashboard</Text>
+        {isWhoopConnected && hasData && <SyncButton compact />}
+      </View>
 
       {!hasData ? (
         <View style={styles.emptyState}>
@@ -145,10 +169,15 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 20,
   },
   emptyState: {
     alignItems: 'center',
