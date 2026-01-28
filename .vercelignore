@@ -1,0 +1,35 @@
+# Beads files
+.beads/
+
+# Environment files
+.env*
+!.env.example
+
+# Development files
+node_modules/
+.expo/
+.git/
+
+# Mobile app files (only deploy backend)
+app/
+assets/
+components/
+constants/
+hooks/
+lib/
+stores/
+types/
+*.tsx
+*.ts
+!api/**/*.ts
+
+# Config files for mobile
+app.json
+expo-env.d.ts
+tsconfig.json
+metro.config.js
+
+# Documentation
+PLAN.md
+UX_WALKTHROUGH.md
+docs/
