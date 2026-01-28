@@ -58,7 +58,7 @@ function RootLayoutNav() {
     if (!profile && !inOnboarding) {
       router.replace('/onboarding');
     } else if (profile && inOnboarding) {
-      router.replace('/(tabs)/dashboard');
+      router.replace('/(tabs)');
     }
   }, [profile, hasHydrated, segments]);
 

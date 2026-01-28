@@ -68,7 +68,7 @@ export default function ImportScreen() {
   };
 
   const handleViewDashboard = () => {
-    router.replace('/(tabs)/dashboard');
+    router.replace('/(tabs)');
   };
 
   const formatDate = (dateString: string) => {

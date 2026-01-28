@@ -9,7 +9,7 @@ export default function OnboardingScreen() {
 
   const handleComplete = (age: number, gender: 'male' | 'female' | 'other') => {
     setProfile(age, gender);
-    router.replace('/(tabs)/dashboard');
+    router.replace('/(tabs)');
   };
 
   return (
