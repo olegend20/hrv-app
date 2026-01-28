@@ -94,8 +94,26 @@ export default function ProfileScreen() {
   if (!profile) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Profile</Text>
-        <Text style={styles.noProfile}>No profile found. Please restart the app.</Text>
+        <View style={styles.content}>
+          <Text style={styles.title}>Profile</Text>
+          <View style={styles.emptyProfileContainer}>
+            <Text style={styles.emptyProfileIcon}>👤</Text>
+            <Text style={styles.emptyProfileTitle}>No Profile Found</Text>
+            <Text style={styles.emptyProfileText}>
+              Create your profile to get personalized HRV insights and benchmarks.
+            </Text>
+            <TouchableOpacity
+              style={styles.setupButton}
+              onPress={() => {
+                // Clear any corrupted data and go to onboarding
+                clearProfile();
+                router.replace('/onboarding');
+              }}
+            >
+              <Text style={styles.setupButtonText}>Setup Profile</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
     );
   }
@@ -371,5 +389,39 @@ const styles = StyleSheet.create({
   },
   syncButtonContainer: {
     marginTop: 16,
+  },
+  emptyProfileContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyProfileIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyProfileTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyProfileText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 24,
+  },
+  setupButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+  },
+  setupButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
