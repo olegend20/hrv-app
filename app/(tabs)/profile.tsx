@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { router } from 'expo-router';
 import { TodaysFocus } from '@/components/TodaysFocus';
 import { ProgressIndicator } from '@/components/ProgressIndicator';
 import { WhoopAuthButton } from '@/components/WhoopAuthButton';
