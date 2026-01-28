@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, Link } from 'expo-router';
 import { TodaysFocus } from '@/components/TodaysFocus';
 import { ProgressIndicator } from '@/components/ProgressIndicator';
 import { WhoopAuthButton } from '@/components/WhoopAuthButton';
@@ -103,16 +103,17 @@ export default function ProfileScreen() {
             <Text style={styles.emptyProfileText}>
               Create your profile to get personalized HRV insights and benchmarks.
             </Text>
-            <TouchableOpacity
-              style={styles.setupButton}
-              onPress={() => {
-                // Clear any corrupted data and go to onboarding
-                clearProfile();
-                router.replace('/onboarding');
-              }}
-            >
-              <Text style={styles.setupButtonText}>Setup Profile</Text>
-            </TouchableOpacity>
+            <Link href="/onboarding" asChild>
+              <TouchableOpacity
+                style={styles.setupButton}
+                onPress={() => {
+                  // Clear any corrupted data first
+                  clearProfile();
+                }}
+              >
+                <Text style={styles.setupButtonText}>Setup Profile</Text>
+              </TouchableOpacity>
+            </Link>
           </View>
         </View>
       </View>
