@@ -34,15 +34,21 @@ export function OnboardingForm({ onComplete }: OnboardingFormProps) {
 
   const handleAgeSubmit = () => {
     console.log('handleAgeSubmit called, age:', age);
-    if (!age) {
-      setError('Please enter your age');
+    const ageNum = parseInt(age, 10);
+
+    if (!age || isNaN(ageNum)) {
+      setError('Please enter a valid age');
       return;
     }
-    const isValid = validateAge(age);
-    console.log('Validation result:', isValid);
-    if (isValid) {
-      setStep('gender');
+
+    if (ageNum < 18 || ageNum > 100) {
+      setError('Please enter an age between 18 and 100');
+      return;
     }
+
+    console.log('Proceeding to gender step');
+    setError('');
+    setStep('gender');
   };
 
   const handleGenderSelect = (selectedGender: Gender) => {
