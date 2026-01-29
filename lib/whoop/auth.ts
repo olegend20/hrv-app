@@ -39,15 +39,15 @@ export async function startWhoopAuth(): Promise<TokenResponse | null> {
     // Use the exact redirect URI registered in WHOOP
     const redirectUri = 'hrvoptimizer://oauth/callback';
 
-    // Generate a random state for CSRF protection
-    const state = Math.random().toString(36).substring(7);
+    // Generate a random state for CSRF protection (min 8 chars required)
+    const state = Math.random().toString(36).substring(2, 15);
 
-    // Build authorization URL
+    // Build authorization URL - must include 'offline' scope for refresh tokens
     const authUrl = `${WHOOP_AUTH_URL}?${new URLSearchParams({
       client_id: WHOOP_CLIENT_ID,
       redirect_uri: redirectUri,
       response_type: 'code',
-      scope: 'read:recovery read:cycles read:sleep read:workout',
+      scope: 'offline read:recovery read:cycles read:sleep read:workout',
       state: state,
     })}`;
 
