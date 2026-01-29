@@ -33,7 +33,14 @@ export function OnboardingForm({ onComplete }: OnboardingFormProps) {
   };
 
   const handleAgeSubmit = () => {
-    if (validateAge(age)) {
+    console.log('handleAgeSubmit called, age:', age);
+    if (!age) {
+      setError('Please enter your age');
+      return;
+    }
+    const isValid = validateAge(age);
+    console.log('Validation result:', isValid);
+    if (isValid) {
       setStep('gender');
     }
   };
