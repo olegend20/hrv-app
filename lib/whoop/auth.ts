@@ -39,11 +39,8 @@ export async function startWhoopAuth(): Promise<TokenResponse | null> {
     // Generate PKCE challenge
     const { codeVerifier, codeChallenge } = await generateCodeChallenge();
 
-    // Get redirect URI
-    const redirectUri = makeRedirectUri({
-      scheme: 'hrvoptimizer',
-      path: 'oauth/callback',
-    });
+    // Use the exact redirect URI registered in WHOOP
+    const redirectUri = 'hrvoptimizer://oauth/callback';
 
     // Build authorization URL
     const authUrl = `${WHOOP_AUTH_URL}?${new URLSearchParams({
