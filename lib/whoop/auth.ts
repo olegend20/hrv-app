@@ -1,6 +1,6 @@
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import * as Crypto from 'expo-crypto';
-import { makeRedirectUri } from 'expo-auth-session';
 
 const WHOOP_CLIENT_ID = '89088cea-8aa0-4a4d-a981-f4d582c28bf3';
 const WHOOP_AUTH_URL = 'https://api.prod.whoop.com/oauth/oauth2/auth';
@@ -47,39 +47,50 @@ export async function startWhoopAuth(): Promise<TokenResponse | null> {
       scope: 'read:recovery read:cycles read:sleep read:workout',
     })}`;
 
-    console.log('Opening auth URL:', authUrl);
+    console.log('Opening auth URL in system browser:', authUrl);
 
-    // Open auth session with timeout
-    const result = await Promise.race([
-      WebBrowser.openAuthSessionAsync(authUrl, redirectUri),
-      new Promise<any>((_, reject) =>
-        setTimeout(() => reject(new Error('OAuth timeout after 60s')), 60000)
-      )
-    ]);
-
-    console.log('Auth result:', result);
-
-    if (result.type === 'cancel') {
-      console.log('User cancelled authentication');
-      return null;
+    // Open in system browser
+    const supported = await Linking.canOpenURL(authUrl);
+    if (!supported) {
+      throw new Error('Cannot open WHOOP authentication URL');
     }
 
-    if (result.type !== 'success') {
-      console.log('Auth failed:', result.type);
-      throw new Error(`Authentication failed: ${result.type}`);
-    }
+    // Open the URL
+    await Linking.openURL(authUrl);
 
-    // Extract authorization code from response URL
-    const url = new URL(result.url);
-    const code = url.searchParams.get('code');
+    // Wait for the redirect callback
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        Linking.removeEventListener('url', handleRedirect);
+        reject(new Error('OAuth timeout - no response from WHOOP'));
+      }, 300000); // 5 minute timeout
 
-    if (!code) {
-      throw new Error('No authorization code received');
-    }
+      const handleRedirect = ({ url }: { url: string }) => {
+        console.log('Received redirect:', url);
+        clearTimeout(timeout);
+        Linking.removeEventListener('url', handleRedirect);
 
-    // Exchange code for tokens via backend proxy
-    const tokens = await exchangeCodeForTokens(code);
-    return tokens;
+        try {
+          const parsedUrl = new URL(url);
+          const code = parsedUrl.searchParams.get('code');
+
+          if (!code) {
+            reject(new Error('No authorization code in redirect'));
+            return;
+          }
+
+          // Exchange code for tokens
+          exchangeCodeForTokens(code)
+            .then(resolve)
+            .catch(reject);
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      Linking.addEventListener('url', handleRedirect);
+    });
+
   } catch (error) {
     console.error('WHOOP auth error:', error);
     throw error;
