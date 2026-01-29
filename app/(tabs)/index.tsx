@@ -78,7 +78,10 @@ export default function DashboardScreen() {
             Import your WHOOP data to start tracking your heart rate variability
           </Text>
           <Link href="/import" asChild>
-            <TouchableOpacity style={styles.importButton}>
+            <TouchableOpacity
+              style={styles.importButton}
+              onPress={() => console.log('Import button clicked, navigating to /import')}
+            >
               <Text style={styles.importButtonText}>Import WHOOP Data</Text>
             </TouchableOpacity>
           </Link>
