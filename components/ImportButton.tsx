@@ -18,12 +18,16 @@ export function ImportButton({
 }: ImportButtonProps) {
   const handlePress = async () => {
     try {
+      console.log('Import button pressed');
       const result = await DocumentPicker.getDocumentAsync({
         type: ['text/csv', 'text/comma-separated-values', 'application/csv'],
         copyToCacheDirectory: true,
       });
 
+      console.log('Document picker result:', result);
+
       if (result.canceled) {
+        console.log('User cancelled file picker');
         return;
       }
 
