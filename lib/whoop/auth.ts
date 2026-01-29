@@ -39,12 +39,16 @@ export async function startWhoopAuth(): Promise<TokenResponse | null> {
     // Use the exact redirect URI registered in WHOOP
     const redirectUri = 'hrvoptimizer://oauth/callback';
 
-    // Build authorization URL (PKCE not required by WHOOP)
+    // Generate a random state for CSRF protection
+    const state = Math.random().toString(36).substring(7);
+
+    // Build authorization URL
     const authUrl = `${WHOOP_AUTH_URL}?${new URLSearchParams({
       client_id: WHOOP_CLIENT_ID,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: 'read:recovery read:cycles read:sleep read:workout',
+      state: state,
     })}`;
 
     console.log('Opening auth URL in system browser:', authUrl);
