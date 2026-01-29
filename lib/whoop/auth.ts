@@ -36,21 +36,18 @@ async function generateCodeChallenge() {
  */
 export async function startWhoopAuth(): Promise<TokenResponse | null> {
   try {
-    // Generate PKCE challenge
-    const { codeVerifier, codeChallenge } = await generateCodeChallenge();
-
     // Use the exact redirect URI registered in WHOOP
     const redirectUri = 'hrvoptimizer://oauth/callback';
 
-    // Build authorization URL
+    // Build authorization URL (PKCE not required by WHOOP)
     const authUrl = `${WHOOP_AUTH_URL}?${new URLSearchParams({
       client_id: WHOOP_CLIENT_ID,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: 'read:recovery read:cycles read:sleep read:workout',
-      code_challenge: codeChallenge,
-      code_challenge_method: 'plain',
     })}`;
+
+    console.log('Opening auth URL:', authUrl);
 
     // Open auth session
     const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
