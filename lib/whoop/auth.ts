@@ -51,49 +51,41 @@ export async function startWhoopAuth(): Promise<TokenResponse | null> {
       state: state,
     })}`;
 
-    console.log('Opening auth URL in system browser:', authUrl);
+    console.log('Opening auth URL:', authUrl);
 
-    // Open in system browser
-    const supported = await Linking.canOpenURL(authUrl);
-    if (!supported) {
-      throw new Error('Cannot open WHOOP authentication URL');
+    // Use WebBrowser for better Expo Go compatibility
+    const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+
+    console.log('Auth session result:', result);
+
+    if (result.type === 'cancel') {
+      console.log('User cancelled');
+      return null;
     }
 
-    // Open the URL
-    await Linking.openURL(authUrl);
+    if (result.type !== 'success') {
+      throw new Error(`Auth failed: ${result.type}`);
+    }
 
-    // Wait for the redirect callback
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        Linking.removeEventListener('url', handleRedirect);
-        reject(new Error('OAuth timeout - no response from WHOOP'));
-      }, 300000); // 5 minute timeout
+    // Extract code from URL
+    const url = new URL(result.url);
+    const code = url.searchParams.get('code');
+    const returnedState = url.searchParams.get('state');
 
-      const handleRedirect = ({ url }: { url: string }) => {
-        console.log('Received redirect:', url);
-        clearTimeout(timeout);
-        Linking.removeEventListener('url', handleRedirect);
+    console.log('Received code:', code ? 'yes' : 'no');
+    console.log('State match:', returnedState === state);
 
-        try {
-          const parsedUrl = new URL(url);
-          const code = parsedUrl.searchParams.get('code');
+    if (!code) {
+      throw new Error('No authorization code received');
+    }
 
-          if (!code) {
-            reject(new Error('No authorization code in redirect'));
-            return;
-          }
+    if (returnedState !== state) {
+      throw new Error('State mismatch - possible CSRF attack');
+    }
 
-          // Exchange code for tokens
-          exchangeCodeForTokens(code)
-            .then(resolve)
-            .catch(reject);
-        } catch (error) {
-          reject(error);
-        }
-      };
-
-      Linking.addEventListener('url', handleRedirect);
-    });
+    // Exchange code for tokens
+    const tokens = await exchangeCodeForTokens(code);
+    return tokens;
 
   } catch (error) {
     console.error('WHOOP auth error:', error);
