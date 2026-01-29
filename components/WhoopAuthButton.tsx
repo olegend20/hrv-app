@@ -24,19 +24,23 @@ export function WhoopAuthButton({ onSuccess, onError }: WhoopAuthButtonProps) {
   const handleConnect = async () => {
     setIsLoading(true);
     try {
+      console.log('Starting WHOOP auth...');
       const tokens = await startWhoopAuth();
 
       if (tokens) {
+        console.log('Tokens received successfully');
         setTokens(tokens.access_token, tokens.refresh_token, tokens.expires_in);
         Alert.alert('Success', 'Connected to WHOOP successfully!');
         onSuccess?.();
       } else {
+        console.log('Auth returned null (cancelled)');
         Alert.alert('Cancelled', 'WHOOP authentication was cancelled');
       }
     } catch (error) {
       console.error('WHOOP connection error:', error);
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to connect to WHOOP';
+      console.error('Error message:', errorMessage);
       Alert.alert('Connection Failed', errorMessage);
       onError?.(errorMessage);
     } finally {

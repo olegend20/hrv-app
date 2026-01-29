@@ -49,12 +49,24 @@ export async function startWhoopAuth(): Promise<TokenResponse | null> {
 
     console.log('Opening auth URL:', authUrl);
 
-    // Open auth session
-    const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+    // Open auth session with timeout
+    const result = await Promise.race([
+      WebBrowser.openAuthSessionAsync(authUrl, redirectUri),
+      new Promise<any>((_, reject) =>
+        setTimeout(() => reject(new Error('OAuth timeout after 60s')), 60000)
+      )
+    ]);
+
+    console.log('Auth result:', result);
+
+    if (result.type === 'cancel') {
+      console.log('User cancelled authentication');
+      return null;
+    }
 
     if (result.type !== 'success') {
-      console.log('Auth cancelled or failed:', result.type);
-      return null;
+      console.log('Auth failed:', result.type);
+      throw new Error(`Authentication failed: ${result.type}`);
     }
 
     // Extract authorization code from response URL
