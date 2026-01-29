@@ -53,6 +53,7 @@ function RootLayoutNav() {
 
     const inOnboarding = segments[0] === 'onboarding';
     const inTabs = segments[0] === '(tabs)';
+    const inImport = segments[0] === 'import';
 
     // If no profile, redirect to onboarding
     if (!profile && !inOnboarding) {
@@ -62,8 +63,8 @@ function RootLayoutNav() {
     else if (profile && inOnboarding) {
       router.replace('/(tabs)');
     }
-    // If has profile and not in tabs yet, go to tabs
-    else if (profile && !inTabs && !inOnboarding) {
+    // If has profile and not in tabs/import/onboarding, go to tabs
+    else if (profile && !inTabs && !inOnboarding && !inImport) {
       router.replace('/(tabs)');
     }
   }, [profile, hasHydrated, segments]);
