@@ -1,10 +1,12 @@
-import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
+import { makeRedirectUri } from 'expo-auth-session';
 
 const WHOOP_CLIENT_ID = '89088cea-8aa0-4a4d-a981-f4d582c28bf3';
 const WHOOP_AUTH_URL = 'https://api.prod.whoop.com/oauth/oauth2/auth';
-const REDIRECT_URI = 'hrvoptimizer://oauth/callback';
 const API_BASE_URL = 'https://hrv-app-virid.vercel.app';
+
+WebBrowser.maybeCompleteAuthSession();
 
 interface TokenResponse {
   access_token: string;
@@ -37,10 +39,16 @@ export async function startWhoopAuth(): Promise<TokenResponse | null> {
     // Generate PKCE challenge
     const { codeVerifier, codeChallenge } = await generateCodeChallenge();
 
+    // Get redirect URI
+    const redirectUri = makeRedirectUri({
+      scheme: 'hrvoptimizer',
+      path: 'oauth/callback',
+    });
+
     // Build authorization URL
     const authUrl = `${WHOOP_AUTH_URL}?${new URLSearchParams({
       client_id: WHOOP_CLIENT_ID,
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: redirectUri,
       response_type: 'code',
       scope: 'read:recovery read:cycles read:sleep read:workout',
       code_challenge: codeChallenge,
@@ -48,18 +56,17 @@ export async function startWhoopAuth(): Promise<TokenResponse | null> {
     })}`;
 
     // Open auth session
-    const result = await AuthSession.startAsync({
-      authUrl,
-      returnUrl: REDIRECT_URI,
-    });
+    const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
 
     if (result.type !== 'success') {
       console.log('Auth cancelled or failed:', result.type);
       return null;
     }
 
-    // Extract authorization code from response
-    const code = result.params.code;
+    // Extract authorization code from response URL
+    const url = new URL(result.url);
+    const code = url.searchParams.get('code');
+
     if (!code) {
       throw new Error('No authorization code received');
     }
