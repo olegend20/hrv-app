@@ -40,6 +40,7 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
     setGeneratedPlan,
     completeSession,
     goToNextStep,
+    hasHydrated,
   } = useMorningRitualStore();
 
   const { getYesterdayPlan } = useAIPlanStore();
@@ -51,8 +52,20 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
 
   const handleStart = () => {
     startSession();
-    goToNextStep(); // Move from welcome to screenshots
+    // Use setTimeout to ensure state update completes before navigation
+    setTimeout(() => {
+      setCurrentStep('screenshots');
+    }, 0);
   };
+
+  // Show loading while store is hydrating
+  if (!hasHydrated) {
+    return (
+      <View style={styles.container}>
+        <AnalysisLoadingAnimation message="Loading..." />
+      </View>
+    );
+  }
 
   const handleScreenshotsComplete = (screenshots: {
     recovery: ScreenshotData | null;
@@ -256,9 +269,13 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
           </View>
         );
       } else {
-        // Skip to habits if no yesterday plan
-        handleYesterdayReviewSkip();
-        return null;
+        // Skip to habits if no yesterday plan - show loading while transitioning
+        setTimeout(() => handleYesterdayReviewSkip(), 0);
+        return (
+          <View style={styles.container}>
+            <AnalysisLoadingAnimation message="Loading..." />
+          </View>
+        );
       }
 
     case 'habits':
@@ -281,10 +298,19 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
 
     case 'plan':
       // Plan screen will be shown after onComplete() is called
-      return null;
+      return (
+        <View style={styles.container}>
+          <AnalysisLoadingAnimation message="Loading your plan..." />
+        </View>
+      );
 
     default:
-      return null;
+      // Fallback - show welcome screen
+      return (
+        <View style={styles.container}>
+          <MorningWelcome onStartRitual={handleStart} />
+        </View>
+      );
   }
 }
 
