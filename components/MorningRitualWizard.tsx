@@ -45,7 +45,7 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
   const { getYesterdayPlan } = useAIPlanStore();
   const { profile } = useUserStore();
   const { healthProfile } = useHealthProfileStore();
-  const { getRecentReadings, getAverageHRV, getTrend } = useHRVStore();
+  const { getRecentReadings, getAverageHRV, getTrend } = useHrvStore();
 
   const yesterdayPlan = getYesterdayPlan();
 
