@@ -5,9 +5,10 @@ import { useAIPlanStore } from '@/stores/aiPlanStore';
 import { useHrvStore } from '@/stores/hrvStore';
 
 export function PlanStatsCard() {
-  const { plans, getAverageAdherence, getCompletionStats } = useAIPlanStore();
+  const { plans, getAverageAdherence, getCompletionStats, getTodayPlan } = useAIPlanStore();
   const readings = useHrvStore((state) => state.readings);
 
+  const todayPlan = getTodayPlan();
   const stats = getCompletionStats();
   const adherence7Days = getAverageAdherence(7);
   const adherence30Days = getAverageAdherence(30);
@@ -41,6 +42,19 @@ export function PlanStatsCard() {
 
   const hrvImprovement = calculateHRVImprovement();
 
+  const getFocusAreaColor = (focusArea: string) => {
+    switch (focusArea) {
+      case 'Recovery':
+        return '#e74c3c';
+      case 'Maintenance':
+        return '#f39c12';
+      case 'Push':
+        return '#27ae60';
+      default:
+        return '#666';
+    }
+  };
+
   if (plans.length === 0) {
     return (
       <View style={styles.card}>
@@ -60,11 +74,46 @@ export function PlanStatsCard() {
 
   return (
     <View style={styles.card}>
+      {/* Today's Plan Section */}
+      {todayPlan && (
+        <View style={styles.todayPlanSection}>
+          <Text style={styles.todayPlanTitle}>Today's Plan</Text>
+          <View
+            style={[
+              styles.focusAreaBadge,
+              { backgroundColor: getFocusAreaColor(todayPlan.focusArea) },
+            ]}
+          >
+            <Text style={styles.focusAreaText}>{todayPlan.focusArea}</Text>
+          </View>
+
+          <View style={styles.progressRow}>
+            <View style={styles.progressInfo}>
+              <Text style={styles.progressValue}>
+                {todayPlan.completed.length}/{todayPlan.recommendations.length}
+              </Text>
+              <Text style={styles.progressLabel}>completed</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.viewPlanButton}
+              onPress={() => router.push('/daily-plan')}
+            >
+              <Text style={styles.viewPlanButtonText}>
+                {todayPlan.completed.length === 0 ? 'Start Plan' : 'Continue'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Overall Stats Section */}
       <View style={styles.header}>
         <Text style={styles.title}>Plan Adherence</Text>
-        <TouchableOpacity onPress={() => router.push('/daily-plan')}>
-          <Text style={styles.linkText}>View Today →</Text>
-        </TouchableOpacity>
+        {!todayPlan && (
+          <TouchableOpacity onPress={() => router.push('/daily-plan')}>
+            <Text style={styles.linkText}>Generate Plan →</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Overall Stats */}
@@ -158,6 +207,61 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  todayPlanSection: {
+    paddingBottom: 16,
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  todayPlanTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  focusAreaBadge: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+  focusAreaText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  progressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  progressInfo: {
+    flex: 1,
+  },
+  progressValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#007AFF',
+    marginBottom: 2,
+  },
+  progressLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  viewPlanButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  viewPlanButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
