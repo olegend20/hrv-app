@@ -15,19 +15,23 @@ import { useUserStore } from '@/stores/userStore';
 import { useHealthProfileStore } from '@/stores/healthProfileStore';
 import { useHrvStore } from '@/stores/hrvStore';
 import { useScreenshotStore } from '@/stores/screenshotStore';
-import { DailyPlan } from '@/types';
+import { useMorningRitualStore } from '@/stores/morningRitualStore';
+import { InsightsCarousel } from '@/components/InsightsCarousel';
+import { DailyPlan, MorningAnalysisResponse } from '@/types';
 
 export default function DailyPlanScreen() {
   const [plan, setPlan] = useState<DailyPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackNotes, setFeedbackNotes] = useState('');
+  const [analysisData, setAnalysisData] = useState<MorningAnalysisResponse['analysis'] | null>(null);
 
   const profile = useUserStore((state) => state.profile);
   const healthProfile = useHealthProfileStore((state) => state.healthProfile);
   const readings = useHrvStore((state) => state.readings);
   const allScreenshots = useScreenshotStore((state) => state.screenshots);
   const getRecentScreenshots = useScreenshotStore((state) => state.getRecentScreenshots);
+  const { currentSession } = useMorningRitualStore();
 
   // Memoize to avoid infinite loop
   const screenshots = useMemo(() => getRecentScreenshots(1), [allScreenshots, getRecentScreenshots]);
@@ -44,6 +48,34 @@ export default function DailyPlanScreen() {
   useEffect(() => {
     loadOrGeneratePlan();
   }, []);
+
+  useEffect(() => {
+    // Extract analysis data from morning ritual session or reconstruct it
+    if (currentSession?.generatedPlan && plan) {
+      // If we came from morning ritual, we might have analysis data
+      // For now, reconstruct basic analysis from plan
+      const basicAnalysis: MorningAnalysisResponse['analysis'] = {
+        status: {
+          hrvPercentile: 50, // Could be calculated
+          vsSevenDay: 0,
+          recoveryState: plan.focusArea === 'Recovery' ? 'Needs Recovery' : 'Well Recovered',
+        },
+        insights: plan.previousDayAnalysis?.learnedInsights || [],
+        previousDayLearnings: plan.previousDayAnalysis?.learnedInsights || [],
+        focusArea: plan.focusArea,
+        reasoning: plan.reasoning,
+        recommendations: plan.recommendations,
+        goalProgress: plan.goalAlignment ? {
+          currentHRV: plan.todayRecovery.hrv,
+          targetHRV: healthProfile?.targetHRV || 50,
+          onTrack: plan.goalAlignment.progressToGoal === 'On track',
+          daysToTarget: 30,
+        } : undefined,
+        estimatedEndOfDayHRV: plan.estimatedEndOfDayHRV,
+      };
+      setAnalysisData(basicAnalysis);
+    }
+  }, [plan, currentSession]);
 
   const loadOrGeneratePlan = async () => {
     try {
@@ -262,6 +294,11 @@ export default function DailyPlanScreen() {
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        {/* Insights Carousel - if available */}
+        {analysisData && (
+          <InsightsCarousel analysis={analysisData} />
+        )}
+
         {/* Focus Area Header */}
         <View
           style={[
@@ -279,6 +316,22 @@ export default function DailyPlanScreen() {
           </View>
           <Text style={styles.reasoning}>{plan.reasoning}</Text>
         </View>
+
+        {/* Previous Day Analysis - if available */}
+        {plan.previousDayAnalysis && plan.previousDayAnalysis.learnedInsights.length > 0 && (
+          <View style={styles.learningsCard}>
+            <Text style={styles.learningsTitle}>What We Learned Yesterday</Text>
+            {plan.previousDayAnalysis.learnedInsights.map((insight, index) => (
+              <View key={index} style={styles.learningItem}>
+                <Text style={styles.learningBullet}>•</Text>
+                <Text style={styles.learningText}>{insight}</Text>
+              </View>
+            ))}
+            <Text style={styles.adherenceText}>
+              Adherence: {Math.round(plan.previousDayAnalysis.adherenceRate)}%
+            </Text>
+          </View>
+        )}
 
         {/* Progress */}
         <View style={styles.progressCard}>
@@ -463,6 +516,41 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#333',
     lineHeight: 22,
+  },
+  learningsCard: {
+    backgroundColor: '#F0F8F5',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  learningsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  learningItem: {
+    flexDirection: 'row',
+    marginBottom: 8,
+    paddingLeft: 8,
+  },
+  learningBullet: {
+    fontSize: 16,
+    color: '#4CAF50',
+    marginRight: 8,
+    fontWeight: 'bold',
+  },
+  learningText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+  },
+  adherenceText: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
   progressCard: {
     backgroundColor: '#f8f8f8',
