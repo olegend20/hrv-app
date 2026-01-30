@@ -138,7 +138,11 @@ export default function ScreenshotUploadScreen() {
       );
 
       // Call screenshot analysis API with all images
-      const apiResponse = await fetch(
+      console.log('[ScreenshotUpload] Calling API with', imageData.length, 'images');
+      console.log('[ScreenshotUpload] API URL:', `${process.env.EXPO_PUBLIC_API_URL}/api/ai/screenshot-analysis`);
+
+      // Try new API format first (multiple images)
+      let apiResponse = await fetch(
         `${process.env.EXPO_PUBLIC_API_URL}/api/ai/screenshot-analysis`,
         {
           method: 'POST',
@@ -153,8 +157,38 @@ export default function ScreenshotUploadScreen() {
         }
       );
 
+      console.log('[ScreenshotUpload] API Response status:', apiResponse.status);
+
+      // If API returns error about missing imageBase64, use old format (single image)
       if (!apiResponse.ok) {
-        throw new Error('Failed to analyze screenshots');
+        const errorData = await apiResponse.json().catch(() => null);
+        if (errorData?.error?.includes('imageBase64')) {
+          console.log('[ScreenshotUpload] Falling back to old API format (single image)');
+          // Use first image only for old API
+          apiResponse = await fetch(
+            `${process.env.EXPO_PUBLIC_API_URL}/api/ai/screenshot-analysis`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                imageBase64: imageData[0].imageBase64,
+                date,
+                userContext,
+              }),
+            }
+          );
+          console.log('[ScreenshotUpload] Fallback API Response status:', apiResponse.status);
+        }
+      }
+
+      if (!apiResponse.ok) {
+        const errorData = await apiResponse.json().catch(() => null);
+        console.error('API Error Response:', errorData);
+        throw new Error(
+          errorData?.message || errorData?.error || 'Failed to analyze screenshots'
+        );
       }
 
       const data = await apiResponse.json();
