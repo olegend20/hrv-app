@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useMorningRitualStore } from '@/stores/morningRitualStore';
 import { useAIPlanStore } from '@/stores/aiPlanStore';
-import { useHRVStore } from '@/stores/hrvStore';
+import { useHrvStore } from '@/stores/hrvStore';
 import { useUserStore } from '@/stores/userStore';
 import { useHealthProfileStore } from '@/stores/healthProfileStore';
 import { MorningWelcome } from './MorningWelcome';
@@ -73,7 +73,7 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
   };
 
   const handleYesterdayReviewSkip = () => {
-    setYesterdayReview(null);
+    // Skip yesterday review - don't set to null, just move to next step
     goToNextStep(); // Move to habits
   };
 
@@ -99,8 +99,8 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
 
   // Generate smart defaults for habit form
   const habitDefaults = useMemo(() => {
-    if (!currentSession) return {};
-    return generateSmartDefaults(currentSession.screenshots, currentSession.morningContext);
+    if (!currentSession) return {} as any;
+    return generateSmartDefaults(currentSession.screenshots, currentSession.morningContext) as any;
   }, [currentSession?.screenshots, currentSession?.morningContext]);
 
   const performAnalysis = async (habitData: HabitEntry) => {
