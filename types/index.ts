@@ -76,3 +76,135 @@ export interface Recommendation {
   message: string;
   expectedImpact: string;
 }
+
+// Milestone 1: Enhanced Onboarding Types
+
+export interface HealthProfile {
+  // Medical History
+  injuries: string[];
+  conditions: string[];
+  medications: string[];
+
+  // Goals
+  primaryGoal: string;
+  secondaryGoals: string[];
+  targetHRV?: number;
+
+  // Exercise
+  exercisePreferences: {
+    likes: string[];
+    dislikes: string[];
+    currentFrequency: string;
+  };
+
+  // Work
+  workEnvironment: {
+    type: string; // "desk job", "active", "remote", etc.
+    stressLevel: 'low' | 'moderate' | 'moderate-high' | 'high';
+    avgMeetingsPerDay: number;
+    deskWork: boolean;
+  };
+
+  // Family
+  familySituation: {
+    hasYoungChildren: boolean;
+    numberOfChildren: number;
+    childrenAges: number[];
+  };
+
+  // Nutrition
+  eatingHabits: {
+    fruitsVeggiesPerDay: number;
+    waterIntakeLiters: number;
+    supplements: string[];
+    dietaryRestrictions: string[];
+  };
+
+  // Sleep
+  sleepPatterns: {
+    avgBedtime: string;
+    avgWakeTime: string;
+    difficulties: string[];
+  };
+
+  // Stress
+  stressTriggers: string[];
+}
+
+// Milestone 2: Screenshot Upload Types
+
+export interface ScreenshotData {
+  id: string;
+  date: string; // ISO date
+  type: 'recovery' | 'sleep'; // Type of screenshot
+  uploadedAt: Date;
+  imageUri?: string; // Temporary, deleted after extraction
+  extractedData: {
+    hrv?: number;
+    recoveryScore?: number;
+    sleepHours?: number;
+    sleepQuality?: number;
+    strain?: number;
+    restingHR?: number;
+  };
+  rawAIResponse: string;
+  userContext?: string; // "How was your day?"
+}
+
+// Milestone 3: Conversational AI Types
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+  context?: {
+    includedHRVData?: boolean;
+    includedHabits?: boolean;
+    includedGoals?: boolean;
+  };
+}
+
+export interface Conversation {
+  id: string;
+  title: string;
+  createdAt: Date;
+  updatedAt: Date;
+  messages: ChatMessage[];
+}
+
+// Milestone 4: Daily Planning Types
+
+export interface DailyPlan {
+  id: string;
+  date: string; // ISO date
+  generatedAt: Date;
+
+  // Input data
+  todayRecovery: {
+    hrv: number;
+    recoveryScore: number;
+    sleepHours: number;
+  };
+  userContext: string;
+
+  // AI output
+  focusArea: 'Recovery' | 'Maintenance' | 'Push';
+  reasoning: string;
+  recommendations: Array<{
+    priority: 1 | 2 | 3;
+    category: 'Exercise' | 'Nutrition' | 'Stress Management' | 'Sleep' | 'Hydration' | 'Recovery';
+    action: string;
+    timing: string;
+    expectedImpact: string;
+  }>;
+  estimatedEndOfDayHRV: number;
+
+  // Tracking
+  completed: string[]; // IDs of completed recommendations
+  outcome?: {
+    followedPlan: boolean;
+    actualNextDayHRV: number;
+    userNotes: string;
+  };
+}

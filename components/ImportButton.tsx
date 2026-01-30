@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 interface ImportButtonProps {
   onFileSelected: (content: string, fileName: string) => void;
@@ -22,6 +22,7 @@ export function ImportButton({
       const result = await DocumentPicker.getDocumentAsync({
         type: ['text/csv', 'text/comma-separated-values', 'application/csv'],
         copyToCacheDirectory: true,
+        multiple: true, // Allow multiple file selection
       });
 
       console.log('Document picker result:', result);
@@ -31,14 +32,28 @@ export function ImportButton({
         return;
       }
 
-      const file = result.assets[0];
-      if (!file.uri) {
-        onError('Could not access file');
-        return;
+      // Process all selected files
+      for (const file of result.assets) {
+        if (!file.uri) {
+          console.warn('Skipping file without URI:', file.name);
+          continue;
+        }
+
+        try {
+          // Read file with explicit encoding
+          const content = await FileSystem.readAsStringAsync(file.uri, {
+            encoding: 'utf8',
+          });
+          onFileSelected(content, file.name);
+        } catch (fileError) {
+          console.error('Error reading file:', file.name, fileError);
+          // Continue with other files even if one fails
+        }
       }
 
-      const content = await FileSystem.readAsStringAsync(file.uri);
-      onFileSelected(content, file.name);
+      if (result.assets.length > 1) {
+        console.log(`Processed ${result.assets.length} files`);
+      }
     } catch (error) {
       console.error('Error picking document:', error);
       onError('Failed to read file. Please try again.');
@@ -54,7 +69,7 @@ export function ImportButton({
       {isLoading ? (
         <ActivityIndicator color="#fff" />
       ) : (
-        <Text style={styles.buttonText}>Select CSV File</Text>
+        <Text style={styles.buttonText}>Select CSV File(s)</Text>
       )}
     </TouchableOpacity>
   );

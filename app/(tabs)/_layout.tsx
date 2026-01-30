@@ -37,6 +37,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="chat"
+        options={{
+          title: 'AI Coach',
+          tabBarIcon: ({ color }) => <TabBarIcon name="comments" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="insights"
         options={{
           title: 'Insights',

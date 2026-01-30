@@ -5,6 +5,9 @@ import { HRVChart } from '@/components/HRVChart';
 import { StatsCard } from '@/components/StatsCard';
 import { LogTodayPrompt } from '@/components/LogTodayPrompt';
 import { SyncButton } from '@/components/SyncButton';
+import { AICoachCard } from '@/components/AICoachCard';
+import { PlanStatsCard } from '@/components/PlanStatsCard';
+import { QuickActionsMenu } from '@/components/QuickActionsMenu';
 import { useHrvStore } from '@/stores/hrvStore';
 import { useUserStore } from '@/stores/userStore';
 import { useHabitStore } from '@/stores/habitStore';
@@ -91,6 +94,12 @@ export default function DashboardScreen() {
           {/* Log Today Prompt */}
           {!todayHabitLogged && <LogTodayPrompt />}
 
+          {/* AI Coach Summary */}
+          <AICoachCard />
+
+          {/* Quick Actions */}
+          <QuickActionsMenu />
+
           {/* Current HRV Card */}
           <View style={styles.currentHrvCard}>
             <Text style={styles.currentHrvLabel}>Your HRV Today</Text>
@@ -150,6 +159,11 @@ export default function DashboardScreen() {
                 subtitle={stats.max ? `↑ from ${stats.min}ms` : undefined}
               />
             </View>
+          </View>
+
+          {/* Plan Adherence Stats */}
+          <View style={styles.section}>
+            <PlanStatsCard />
           </View>
 
           {/* Import More Data Link */}

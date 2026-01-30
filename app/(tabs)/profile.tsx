@@ -12,6 +12,7 @@ import { TodaysFocus } from '@/components/TodaysFocus';
 import { ProgressIndicator } from '@/components/ProgressIndicator';
 import { WhoopAuthButton } from '@/components/WhoopAuthButton';
 import { SyncButton } from '@/components/SyncButton';
+import { RateLimitStatus } from '@/components/RateLimitStatus';
 import { useUserStore } from '@/stores/userStore';
 import { useHrvStore } from '@/stores/hrvStore';
 import { useHabitStore } from '@/stores/habitStore';
@@ -153,6 +154,11 @@ export default function ProfileScreen() {
             </View>
           </>
         )}
+      </View>
+
+      {/* AI Usage */}
+      <View style={styles.section}>
+        <RateLimitStatus />
       </View>
 
       {/* Today's Focus */}

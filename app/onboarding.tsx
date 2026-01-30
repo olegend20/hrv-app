@@ -1,15 +1,24 @@
 import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { router } from 'expo-router';
-import { OnboardingForm } from '@/components/OnboardingForm';
+import { EnhancedOnboardingForm } from '@/components/EnhancedOnboardingForm';
 import { useUserStore } from '@/stores/userStore';
+import { useHealthProfileStore } from '@/stores/healthProfileStore';
+import { HealthProfile } from '@/types';
 
 export default function OnboardingScreen() {
   const setProfile = useUserStore((state) => state.setProfile);
+  const setHealthProfile = useHealthProfileStore((state) => state.setHealthProfile);
 
-  const handleComplete = (age: number, gender: 'male' | 'female' | 'other') => {
+  const handleComplete = (
+    age: number,
+    gender: 'male' | 'female' | 'other',
+    healthProfile: HealthProfile
+  ) => {
     setProfile(age, gender);
-    router.replace('/(tabs)');
+    setHealthProfile(healthProfile);
+    // Navigate to WHOOP sync screen (will be created in next bead)
+    router.push('/whoop-sync');
   };
 
   return (
@@ -18,7 +27,7 @@ export default function OnboardingScreen() {
         <Text style={styles.logo}>♥</Text>
         <Text style={styles.appName}>HRV Optimizer</Text>
       </View>
-      <OnboardingForm onComplete={handleComplete} />
+      <EnhancedOnboardingForm onComplete={handleComplete} />
     </View>
   );
 }

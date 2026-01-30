@@ -138,10 +138,12 @@ export async function fetchWhoopHRVData(
           recovery.score.hrv_rmssd_milli > 0
         ) {
           const reading: HRVReading = {
+            id: `whoop-${cycle.id}`,
             date: cycle.start.split('T')[0], // Extract date from ISO string
-            hrv: recovery.score.hrv_rmssd_milli,
+            hrvMs: recovery.score.hrv_rmssd_milli,
             restingHR: recovery.score.resting_heart_rate,
             recoveryScore: recovery.score.recovery_score,
+            source: 'whoop_api',
           };
 
           hrvReadings.push(reading);

@@ -55,6 +55,17 @@ function RootLayoutNav() {
     const inTabs = segments[0] === '(tabs)';
     const inImport = segments[0] === 'import';
 
+    // Whitelist screens that should be accessible outside tabs
+    const allowedScreens = [
+      'screenshot-upload',
+      'screenshot-review',
+      'daily-plan',
+      'whoop-sync',
+      'onboarding-summary',
+      'modal',
+    ];
+    const inAllowedScreen = allowedScreens.includes(segments[0]);
+
     // If no profile, redirect to onboarding
     if (!profile && !inOnboarding) {
       router.replace('/onboarding');
@@ -63,18 +74,17 @@ function RootLayoutNav() {
     else if (profile && inOnboarding) {
       router.replace('/(tabs)');
     }
-    // If has profile and not in tabs/import/onboarding, go to tabs
-    else if (profile && !inTabs && !inOnboarding && !inImport) {
+    // If has profile and not in allowed location, go to tabs
+    else if (profile && !inTabs && !inOnboarding && !inImport && !inAllowedScreen) {
       router.replace('/(tabs)');
     }
   }, [profile, hasHydrated, segments]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+      <Stack screenOptions={{ headerShown: true }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-        <Stack.Screen name="import" options={{ headerShown: true, title: 'Import Data' }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
