@@ -11,10 +11,10 @@ interface QuickAction {
 
 const QUICK_ACTIONS: QuickAction[] = [
   {
-    icon: '📸',
-    label: 'Upload Screenshot',
-    route: '/screenshot-upload',
-    description: 'Add WHOOP data',
+    icon: '☀️',
+    label: 'Morning Check-In',
+    route: '/morning-ritual',
+    description: 'Complete daily ritual',
   },
   {
     icon: '📋',

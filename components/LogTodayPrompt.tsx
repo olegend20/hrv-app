@@ -10,17 +10,17 @@ export function LogTodayPrompt({ onDismiss }: LogTodayPromptProps) {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.emoji}>📝</Text>
+        <Text style={styles.emoji}>☀️</Text>
         <View style={styles.textContainer}>
-          <Text style={styles.title}>Log Today's Habits</Text>
+          <Text style={styles.title}>Start Your Morning Check-In</Text>
           <Text style={styles.subtitle}>
-            Track your habits to see how they affect your HRV
+            Upload data, get AI analysis, and receive your personalized plan
           </Text>
         </View>
       </View>
-      <Link href="/(tabs)/habits" asChild>
+      <Link href="/morning-ritual" asChild>
         <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Log Now</Text>
+          <Text style={styles.buttonText}>Start Now</Text>
         </TouchableOpacity>
       </Link>
     </View>

@@ -4,6 +4,7 @@ import { Link } from 'expo-router';
 import { HRVChart } from '@/components/HRVChart';
 import { StatsCard } from '@/components/StatsCard';
 import { LogTodayPrompt } from '@/components/LogTodayPrompt';
+import { MorningRitualCard } from '@/components/MorningRitualCard';
 import { SyncButton } from '@/components/SyncButton';
 import { AICoachCard } from '@/components/AICoachCard';
 import { PlanStatsCard } from '@/components/PlanStatsCard';
@@ -91,8 +92,8 @@ export default function DashboardScreen() {
         </View>
       ) : (
         <>
-          {/* Log Today Prompt */}
-          {!todayHabitLogged && <LogTodayPrompt />}
+          {/* Morning Ritual Card - Prominent CTA */}
+          <MorningRitualCard />
 
           {/* AI Coach Summary */}
           <AICoachCard />
