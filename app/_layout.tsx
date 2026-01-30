@@ -60,6 +60,7 @@ function RootLayoutNav() {
       'screenshot-upload',
       'screenshot-review',
       'daily-plan',
+      'morning-ritual',
       'whoop-sync',
       'onboarding-summary',
       'modal',
