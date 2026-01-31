@@ -15,6 +15,9 @@ interface HrvState {
   getReadingByDate: (date: string) => HRVReading | undefined;
   getReadingsByDateRange: (startDate: string, endDate: string) => HRVReading[];
   getLatestReading: () => HRVReading | undefined;
+  getRecentReadings: (days: number) => HRVReading[];
+  getAverageHRV: (days: number) => number;
+  getTrend: (days: number) => 'improving' | 'declining' | 'stable';
   clearReadings: () => void;
   setHasHydrated: (state: boolean) => void;
   syncWhoopData: (daysBack?: number) => Promise<number>;
@@ -69,6 +72,44 @@ export const useHrvStore = create<HrvState>()(
       getLatestReading: () => {
         const readings = get().readings;
         return readings.length > 0 ? readings[readings.length - 1] : undefined;
+      },
+
+      getRecentReadings: (days: number) => {
+        const readings = get().readings;
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+        const cutoffStr = cutoffDate.toISOString().split('T')[0];
+
+        return readings
+          .filter((r) => r.date >= cutoffStr)
+          .sort((a, b) => a.date.localeCompare(b.date));
+      },
+
+      getAverageHRV: (days: number) => {
+        const recentReadings = get().getRecentReadings(days);
+        if (recentReadings.length === 0) return 0;
+
+        const sum = recentReadings.reduce((acc, r) => acc + r.hrvMs, 0);
+        return Math.round(sum / recentReadings.length);
+      },
+
+      getTrend: (days: number) => {
+        const recentReadings = get().getRecentReadings(days);
+        if (recentReadings.length < 2) return 'stable';
+
+        // Split into first half and second half
+        const midpoint = Math.floor(recentReadings.length / 2);
+        const firstHalf = recentReadings.slice(0, midpoint);
+        const secondHalf = recentReadings.slice(midpoint);
+
+        const firstAvg = firstHalf.reduce((acc, r) => acc + r.hrvMs, 0) / firstHalf.length;
+        const secondAvg = secondHalf.reduce((acc, r) => acc + r.hrvMs, 0) / secondHalf.length;
+
+        const percentChange = ((secondAvg - firstAvg) / firstAvg) * 100;
+
+        if (percentChange > 5) return 'improving';
+        if (percentChange < -5) return 'declining';
+        return 'stable';
       },
 
       clearReadings: () => {
