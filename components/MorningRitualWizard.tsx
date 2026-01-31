@@ -53,14 +53,6 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
   const yesterdayPlan = getYesterdayPlan();
   const todayPlan = useAIPlanStore((state) => state.getTodayPlan)();
 
-  // Clear completed sessions on mount
-  useEffect(() => {
-    if (currentSession && currentSession.completedAt) {
-      console.log('[MorningRitualWizard] Clearing completed session from:', currentSession.date);
-      clearSession();
-    }
-  }, []);
-
   // Prevent starting if today's plan already exists
   useEffect(() => {
     if (todayPlan) {
@@ -81,6 +73,14 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
       );
     }
   }, [todayPlan]);
+
+  // Clear completed sessions immediately
+  useEffect(() => {
+    if (currentSession && currentSession.completedAt) {
+      console.log('[MorningRitualWizard] Clearing completed session from:', currentSession.date);
+      clearSession();
+    }
+  }, [currentSession]);
 
   const handleStart = () => {
     // Check if health profile exists before starting
@@ -352,7 +352,16 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
     }
   };
 
-  if (!currentSession) {
+  // Only use session if it's valid (not completed, and for today)
+  const today = new Date().toISOString().split('T')[0];
+  const validSession =
+    currentSession &&
+    !currentSession.completedAt &&
+    currentSession.date === today
+      ? currentSession
+      : null;
+
+  if (!validSession) {
     return (
       <View style={styles.container}>
         <MorningWelcome onStartRitual={handleStart} />
@@ -361,7 +370,7 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
   }
 
   // Render based on current step
-  switch (currentSession.currentStep) {
+  switch (validSession.currentStep) {
     case 'welcome':
       return (
         <View style={styles.container}>
