@@ -1,15 +1,20 @@
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useMorningRitualStore } from '@/stores/morningRitualStore';
 import { useAIPlanStore } from '@/stores/aiPlanStore';
+import { useHealthProfileStore } from '@/stores/healthProfileStore';
 
 export function MorningRitualCard() {
   const { currentSession, resumeSession } = useMorningRitualStore();
   const { getTodayPlan } = useAIPlanStore();
+  const { healthProfile } = useHealthProfileStore();
 
   const todayPlan = getTodayPlan();
   const activeSession = resumeSession();
+
+  // Check if health profile is complete
+  const hasHealthProfile = healthProfile && healthProfile.primaryGoal;
 
   // Don't show if already completed today
   if (todayPlan && !activeSession) {
@@ -17,6 +22,23 @@ export function MorningRitualCard() {
   }
 
   const handlePress = () => {
+    if (!hasHealthProfile) {
+      Alert.alert(
+        'Complete Your Health Profile',
+        'Before starting your morning ritual, please complete your health profile. This helps us personalize your daily plan with exercise recommendations based on your preferences, account for injuries, and align with your health goals.',
+        [
+          {
+            text: 'Complete Profile',
+            onPress: () => router.push('/onboarding'),
+          },
+          {
+            text: 'Later',
+            style: 'cancel',
+          },
+        ]
+      );
+      return;
+    }
     router.push('/morning-ritual');
   };
 
@@ -47,14 +69,26 @@ export function MorningRitualCard() {
   };
 
   return (
-    <TouchableOpacity style={styles.container} onPress={handlePress} activeOpacity={0.8}>
+    <TouchableOpacity
+      style={[styles.container, !hasHealthProfile && styles.containerDisabled]}
+      onPress={handlePress}
+      activeOpacity={0.8}
+    >
       <View style={styles.header}>
-        <Text style={styles.emoji}>☀️</Text>
+        <Text style={styles.emoji}>{hasHealthProfile ? '☀️' : '⚠️'}</Text>
         <View style={styles.headerText}>
           <Text style={styles.title}>
-            {activeSession ? 'Continue Morning Ritual' : 'Start Morning Ritual'}
+            {!hasHealthProfile
+              ? 'Complete Health Profile First'
+              : activeSession
+                ? 'Continue Morning Ritual'
+                : 'Start Morning Ritual'}
           </Text>
-          <Text style={styles.subtitle}>{getProgressText()}</Text>
+          <Text style={styles.subtitle}>
+            {!hasHealthProfile
+              ? 'Required for personalized plans'
+              : getProgressText()}
+          </Text>
         </View>
       </View>
 
@@ -75,7 +109,11 @@ export function MorningRitualCard() {
 
       <View style={styles.ctaContainer}>
         <Text style={styles.ctaText}>
-          {activeSession ? 'Resume →' : 'Get Started →'}
+          {!hasHealthProfile
+            ? 'Set Up Profile →'
+            : activeSession
+              ? 'Resume →'
+              : 'Get Started →'}
         </Text>
       </View>
     </TouchableOpacity>
@@ -104,6 +142,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
+  },
+  containerDisabled: {
+    backgroundColor: '#FFF9F5',
+    borderColor: '#FFB84D',
   },
   header: {
     flexDirection: 'row',

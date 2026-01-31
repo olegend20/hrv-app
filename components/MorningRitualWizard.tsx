@@ -52,6 +52,25 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
   const yesterdayPlan = getYesterdayPlan();
 
   const handleStart = () => {
+    // Check if health profile exists before starting
+    if (!healthProfile || !healthProfile.primaryGoal) {
+      Alert.alert(
+        'Complete Your Profile First',
+        'Please complete your health profile to get personalized recommendations. This includes your goals, exercise preferences, and health information.',
+        [
+          {
+            text: 'Complete Profile',
+            onPress: () => router.push('/onboarding'),
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
+      return;
+    }
+
     startSession();
     // Use setTimeout to ensure state update completes before navigation
     setTimeout(() => {
