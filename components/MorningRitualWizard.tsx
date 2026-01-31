@@ -82,6 +82,21 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
     }
   }, [currentSession]);
 
+  // Auto-trigger analysis if resuming at analysis step with habit data but no plan
+  useEffect(() => {
+    const shouldTriggerAnalysis =
+      currentSession &&
+      currentSession.currentStep === 'analysis' &&
+      currentSession.habitData &&
+      !currentSession.generatedPlan &&
+      !currentSession.completedAt;
+
+    if (shouldTriggerAnalysis) {
+      console.log('[MorningRitualWizard] Resuming analysis from saved session');
+      performAnalysis(currentSession.habitData);
+    }
+  }, [currentSession?.currentStep, currentSession?.habitData, currentSession?.generatedPlan]);
+
   const handleStart = () => {
     // Check if health profile exists before starting
     if (!healthProfile || !healthProfile.primaryGoal) {
