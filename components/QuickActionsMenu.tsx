@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { router } from 'expo-router';
+import { useAIPlanStore } from '@/stores/aiPlanStore';
 
 interface QuickAction {
   icon: string;
@@ -37,17 +38,28 @@ const QUICK_ACTIONS: QuickAction[] = [
 ];
 
 export function QuickActionsMenu() {
+  const { getTodayPlan } = useAIPlanStore();
+  const todayPlan = getTodayPlan();
+
   const handleActionPress = (action: QuickAction) => {
     console.log('[QuickActionsMenu] Button pressed:', action.label, 'Route:', action.route);
     router.push(action.route as any);
     console.log('[QuickActionsMenu] Navigation triggered for:', action.route);
   };
 
+  // Filter out Morning Check-In if today's plan already exists
+  const availableActions = QUICK_ACTIONS.filter((action) => {
+    if (action.label === 'Morning Check-In' && todayPlan) {
+      return false; // Hide morning ritual if plan exists
+    }
+    return true;
+  });
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Quick Actions</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {QUICK_ACTIONS.map((action, index) => (
+        {availableActions.map((action, index) => (
           <TouchableOpacity
             key={index}
             style={styles.actionCard}

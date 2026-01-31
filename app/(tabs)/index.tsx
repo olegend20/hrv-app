@@ -13,6 +13,7 @@ import { useHrvStore } from '@/stores/hrvStore';
 import { useUserStore } from '@/stores/userStore';
 import { useHabitStore } from '@/stores/habitStore';
 import { useWhoopAuthStore } from '@/stores/whoopAuthStore';
+import { useAIPlanStore } from '@/stores/aiPlanStore';
 import { calculateStatistics, calculateChange, getReadingsForLastDays } from '@/lib/hrv/statistics';
 import { getPercentile, getOrdinalSuffix } from '@/lib/hrv/percentile';
 import { getBenchmark } from '@/constants/benchmarks';
@@ -28,8 +29,10 @@ export default function DashboardScreen() {
   const syncWhoopData = useHrvStore((state) => state.syncWhoopData);
   const lastSyncTime = useHrvStore((state) => state.lastSyncTime);
   const isWhoopConnected = useWhoopAuthStore((state) => state.isAuthenticated);
+  const { getTodayPlan } = useAIPlanStore();
 
   const todayHabitLogged = !!getHabitByDate(getTodayDate());
+  const todayPlan = getTodayPlan();
 
   // Auto-sync on app launch if connected and not synced recently
   useEffect(() => {
@@ -92,11 +95,8 @@ export default function DashboardScreen() {
         </View>
       ) : (
         <>
-          {/* Morning Ritual Card - Prominent CTA */}
-          <MorningRitualCard />
-
-          {/* AI Coach Summary */}
-          <AICoachCard />
+          {/* Morning Ritual OR AI Coach - Only show one */}
+          {!todayPlan ? <MorningRitualCard /> : <AICoachCard />}
 
           {/* Quick Actions */}
           <QuickActionsMenu />

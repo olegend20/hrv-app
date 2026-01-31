@@ -51,6 +51,7 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
   const { getRecentReadings, getAverageHRV, getTrend } = useHrvStore();
 
   const yesterdayPlan = getYesterdayPlan();
+  const todayPlan = useAIPlanStore((state) => state.getTodayPlan)();
 
   // Clear completed sessions on mount
   useEffect(() => {
@@ -59,6 +60,27 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
       clearSession();
     }
   }, []);
+
+  // Prevent starting if today's plan already exists
+  useEffect(() => {
+    if (todayPlan) {
+      Alert.alert(
+        'Already Completed',
+        "You've already completed your morning ritual for today! Check back tomorrow.",
+        [
+          {
+            text: 'View Today\'s Plan',
+            onPress: () => router.replace('/daily-plan'),
+          },
+          {
+            text: 'Go to Dashboard',
+            onPress: () => router.replace('/(tabs)'),
+            style: 'cancel',
+          },
+        ]
+      );
+    }
+  }, [todayPlan]);
 
   const handleStart = () => {
     // Check if health profile exists before starting

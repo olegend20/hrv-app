@@ -2,259 +2,170 @@ import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useAIPlanStore } from '@/stores/aiPlanStore';
-import { DailyPlan } from '@/types';
 
 export function AICoachCard() {
   const { getTodayPlan } = useAIPlanStore();
   const todayPlan = getTodayPlan();
 
-  if (!todayPlan) {
-    return (
-      <View style={styles.card}>
-        <View style={styles.header}>
-          <Text style={styles.aiIcon}>🤖</Text>
-          <View style={styles.headerText}>
-            <Text style={styles.title}>Your AI Coach</Text>
-            <Text style={styles.subtitle}>Get personalized daily guidance</Text>
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => router.push('/daily-plan')}
-        >
-          <Text style={styles.buttonText}>Generate Today's Plan</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  const getFocusAreaColor = (focusArea: DailyPlan['focusArea']) => {
-    switch (focusArea) {
-      case 'Recovery':
-        return '#e74c3c';
-      case 'Maintenance':
-        return '#f39c12';
-      case 'Push':
-        return '#27ae60';
-      default:
-        return '#666';
-    }
+  const handlePress = () => {
+    // TODO: Navigate to AI Coach chat interface
+    // For now, go to daily plan
+    router.push('/daily-plan');
   };
 
-  const getFocusAreaIcon = (focusArea: DailyPlan['focusArea']) => {
-    switch (focusArea) {
-      case 'Recovery':
-        return '🛀';
-      case 'Maintenance':
-        return '⚖️';
-      case 'Push':
-        return '💪';
-      default:
-        return '📋';
-    }
+  const getCompletionCount = () => {
+    if (!todayPlan) return 0;
+    return todayPlan.completed.length;
   };
 
-  const topRecommendations = todayPlan.recommendations
-    .filter((r) => r.priority === 1)
-    .slice(0, 3);
+  const getTotalRecommendations = () => {
+    if (!todayPlan) return 0;
+    return todayPlan.recommendations.length;
+  };
 
-  const completionRate = Math.round(
-    (todayPlan.completed.length / todayPlan.recommendations.length) * 100
-  );
+  const completionPercentage = getTotalRecommendations() > 0
+    ? Math.round((getCompletionCount() / getTotalRecommendations()) * 100)
+    : 0;
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity
+      style={styles.container}
+      onPress={handlePress}
+      activeOpacity={0.8}
+    >
       <View style={styles.header}>
-        <Text style={styles.aiIcon}>🤖</Text>
+        <Text style={styles.emoji}>🤖</Text>
         <View style={styles.headerText}>
-          <Text style={styles.title}>Your AI Coach says...</Text>
-          <View
-            style={[
-              styles.focusAreaBadge,
-              { backgroundColor: getFocusAreaColor(todayPlan.focusArea) },
-            ]}
-          >
-            <Text style={styles.focusAreaText}>
-              {getFocusAreaIcon(todayPlan.focusArea)} {todayPlan.focusArea} Day
-            </Text>
-          </View>
+          <Text style={styles.title}>AI Health Coach</Text>
+          <Text style={styles.subtitle}>
+            Ask questions about your plan & HRV
+          </Text>
         </View>
       </View>
 
-      <Text style={styles.reasoning}>{todayPlan.reasoning}</Text>
+      <View style={styles.statsContainer}>
+        <View style={styles.statItem}>
+          <Text style={styles.statLabel}>Today's Focus</Text>
+          <Text style={styles.statValue}>{todayPlan?.focusArea || 'N/A'}</Text>
+        </View>
+        <View style={styles.divider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statLabel}>Progress</Text>
+          <Text style={styles.statValue}>
+            {getCompletionCount()}/{getTotalRecommendations()}
+          </Text>
+        </View>
+      </View>
 
-      {topRecommendations.length > 0 && (
-        <View style={styles.recommendationsSection}>
-          <Text style={styles.recommendationsTitle}>Top Priorities:</Text>
-          {topRecommendations.map((rec, index) => {
-            const recIndex = todayPlan.recommendations.indexOf(rec);
-            const isCompleted = todayPlan.completed.includes(`rec-${recIndex}`);
-
-            return (
-              <View key={index} style={styles.recommendationItem}>
-                <Text style={styles.recommendationBullet}>
-                  {isCompleted ? '✓' : '•'}
-                </Text>
-                <Text
-                  style={[
-                    styles.recommendationText,
-                    isCompleted && styles.recommendationCompleted,
-                  ]}
-                >
-                  {rec.action}
-                </Text>
-              </View>
-            );
-          })}
+      {completionPercentage > 0 && (
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${completionPercentage}%` }]} />
+          </View>
+          <Text style={styles.progressText}>{completionPercentage}% Complete</Text>
         </View>
       )}
 
-      <View style={styles.footer}>
-        <View style={styles.progressSection}>
-          <Text style={styles.progressLabel}>Progress: {completionRate}%</Text>
-          <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${completionRate}%`,
-                  backgroundColor: getFocusAreaColor(todayPlan.focusArea),
-                },
-              ]}
-            />
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={styles.viewButton}
-          onPress={() => router.push('/daily-plan')}
-        >
-          <Text style={styles.viewButtonText}>View Full Plan →</Text>
-        </TouchableOpacity>
+      <View style={styles.ctaContainer}>
+        <Text style={styles.ctaText}>Chat with Coach →</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#f8f8ff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e0e0ff',
+  container: {
+    backgroundColor: '#F0F7FF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: '#4A90E2',
+    shadowColor: '#4A90E2',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  aiIcon: {
-    fontSize: 32,
+  emoji: {
+    fontSize: 36,
     marginRight: 12,
   },
   headerText: {
     flex: 1,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 6,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4A90E2',
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,
     color: '#666',
   },
-  focusAreaBadge: {
-    alignSelf: 'flex-start',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    marginTop: 4,
-  },
-  focusAreaText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  reasoning: {
-    fontSize: 14,
-    color: '#555',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  recommendationsSection: {
-    marginBottom: 12,
-  },
-  recommendationsTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  recommendationItem: {
+  statsContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 6,
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
   },
-  recommendationBullet: {
-    fontSize: 14,
-    color: '#007AFF',
-    marginRight: 8,
-    marginTop: 2,
-  },
-  recommendationText: {
+  statItem: {
     flex: 1,
-    fontSize: 13,
-    color: '#333',
-    lineHeight: 18,
+    alignItems: 'center',
   },
-  recommendationCompleted: {
-    color: '#999',
-    textDecorationLine: 'line-through',
+  divider: {
+    width: 1,
+    height: 30,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 8,
   },
-  footer: {
-    marginTop: 8,
-  },
-  progressSection: {
-    marginBottom: 12,
-  },
-  progressLabel: {
-    fontSize: 12,
+  statLabel: {
+    fontSize: 11,
     color: '#666',
     marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  progressContainer: {
+    marginBottom: 16,
   },
   progressBar: {
-    height: 6,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 3,
+    height: 8,
+    backgroundColor: '#D6E9FF',
+    borderRadius: 4,
     overflow: 'hidden',
+    marginBottom: 6,
   },
   progressFill: {
     height: '100%',
-    borderRadius: 3,
+    backgroundColor: '#4A90E2',
+    borderRadius: 4,
   },
-  button: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+  progressText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'right',
+  },
+  ctaContainer: {
     alignItems: 'center',
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 14,
+  ctaText: {
+    fontSize: 15,
     fontWeight: '600',
-  },
-  viewButton: {
-    alignSelf: 'flex-end',
-  },
-  viewButtonText: {
-    color: '#007AFF',
-    fontSize: 14,
-    fontWeight: '600',
+    color: '#4A90E2',
   },
 });

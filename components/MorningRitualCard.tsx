@@ -16,8 +16,8 @@ export function MorningRitualCard() {
   // Check if health profile is complete
   const hasHealthProfile = healthProfile && healthProfile.primaryGoal;
 
-  // Don't show if already completed today
-  if (todayPlan && !activeSession) {
+  // Don't show if already completed today (plan exists)
+  if (todayPlan) {
     return null;
   }
 
