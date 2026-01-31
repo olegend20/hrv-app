@@ -84,16 +84,30 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
 
   // Auto-trigger analysis if resuming at analysis step with habit data but no plan
   useEffect(() => {
+    if (!currentSession || currentSession.completedAt) return;
+
+    const hasRequiredData =
+      currentSession.screenshots &&
+      (currentSession.screenshots.recovery || currentSession.screenshots.sleep) &&
+      currentSession.morningContext &&
+      currentSession.habitData;
+
     const shouldTriggerAnalysis =
-      currentSession &&
       currentSession.currentStep === 'analysis' &&
-      currentSession.habitData &&
-      !currentSession.generatedPlan &&
-      !currentSession.completedAt;
+      hasRequiredData &&
+      !currentSession.generatedPlan;
 
     if (shouldTriggerAnalysis) {
       console.log('[MorningRitualWizard] Resuming analysis from saved session');
-      performAnalysis(currentSession.habitData);
+      performAnalysis(currentSession.habitData!);
+    } else if (currentSession.currentStep === 'analysis' && !hasRequiredData) {
+      // Session is at analysis but missing data - reset to beginning
+      console.error('[MorningRitualWizard] Analysis step missing required data, resetting to screenshots');
+      Alert.alert(
+        'Session Error',
+        'Your saved session is missing required data. Please start over.',
+        [{ text: 'OK', onPress: () => setCurrentStep('screenshots') }]
+      );
     }
   }, [currentSession?.currentStep, currentSession?.habitData, currentSession?.generatedPlan]);
 
@@ -183,6 +197,11 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
   }, [currentSession?.screenshots, currentSession?.morningContext]);
 
   const performAnalysis = async (habitData: HabitEntry) => {
+    console.log('[MorningRitualWizard] Starting performAnalysis');
+    console.log('[MorningRitualWizard] Has currentSession:', !!currentSession);
+    console.log('[MorningRitualWizard] Has profile:', !!profile);
+    console.log('[MorningRitualWizard] Has habitData:', !!habitData);
+
     if (!currentSession || !profile) {
       console.error('Missing required data for analysis - session or profile missing');
       Alert.alert(
@@ -197,6 +216,10 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
       // Extract biometrics from screenshots
       const recoveryData = currentSession.screenshots.recovery?.extractedData;
       const sleepData = currentSession.screenshots.sleep?.extractedData;
+
+      console.log('[MorningRitualWizard] Has recoveryData:', !!recoveryData);
+      console.log('[MorningRitualWizard] Has sleepData:', !!sleepData);
+      console.log('[MorningRitualWizard] Has morningContext:', !!currentSession.morningContext);
 
       if (!recoveryData && !sleepData) {
         console.error('No biometric data extracted from screenshots');
@@ -278,6 +301,9 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
       };
 
       // Call morning analysis API
+      console.log('[MorningRitualWizard] Calling morning analysis API');
+      console.log('[MorningRitualWizard] API URL:', `${process.env.EXPO_PUBLIC_API_URL}/api/ai/morning-analysis`);
+
       const response = await fetch(
         `${process.env.EXPO_PUBLIC_API_URL}/api/ai/morning-analysis`,
         {
@@ -289,8 +315,11 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
         }
       );
 
+      console.log('[MorningRitualWizard] API response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
+        console.error('[MorningRitualWizard] API error response:', errorData);
         const errorMessage = errorData?.error || errorData?.message || 'Failed to generate analysis';
         throw new Error(errorMessage);
       }
