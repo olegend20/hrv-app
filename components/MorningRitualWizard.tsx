@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
+import { router } from 'expo-router';
 import { useMorningRitualStore } from '@/stores/morningRitualStore';
 import { useAIPlanStore } from '@/stores/aiPlanStore';
 import { useHrvStore } from '@/stores/hrvStore';
@@ -117,8 +118,13 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
   }, [currentSession?.screenshots, currentSession?.morningContext]);
 
   const performAnalysis = async (habitData: HabitEntry) => {
-    if (!currentSession || !profile || !healthProfile) {
-      console.error('Missing required data for analysis');
+    if (!currentSession || !profile) {
+      console.error('Missing required data for analysis - session or profile missing');
+      Alert.alert(
+        'Error',
+        'Missing user profile data. Please complete your profile setup.',
+        [{ text: 'OK', onPress: () => router.back() }]
+      );
       return;
     }
 
@@ -126,6 +132,17 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
       // Extract biometrics from screenshots
       const recoveryData = currentSession.screenshots.recovery?.extractedData;
       const sleepData = currentSession.screenshots.sleep?.extractedData;
+
+      if (!recoveryData && !sleepData) {
+        console.error('No biometric data extracted from screenshots');
+        Alert.alert(
+          'Error',
+          'Could not extract data from screenshots. Please try again with clearer images.',
+          [{ text: 'OK' }]
+        );
+        setCurrentStep('screenshots');
+        return;
+      }
 
       const todayBiometrics = {
         hrv: recoveryData?.hrv || 50,
@@ -142,7 +159,43 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
       const avg30Day = getAverageHRV(30);
       const trend = getTrend(30);
 
-      // Build analysis request
+      // Build analysis request with default health profile if missing
+      const defaultHealthProfile = {
+        injuries: [],
+        conditions: [],
+        medications: [],
+        primaryGoal: 'Improve overall HRV and recovery',
+        secondaryGoals: [],
+        exercisePreferences: {
+          likes: [],
+          dislikes: [],
+          currentFrequency: 'moderate',
+        },
+        workEnvironment: {
+          type: 'desk job',
+          stressLevel: 'moderate' as const,
+          avgMeetingsPerDay: 3,
+          deskWork: true,
+        },
+        familySituation: {
+          hasYoungChildren: false,
+          numberOfChildren: 0,
+          childrenAges: [],
+        },
+        eatingHabits: {
+          fruitsVeggiesPerDay: 3,
+          waterIntakeLiters: 2,
+          supplements: [],
+          dietaryRestrictions: [],
+        },
+        sleepPatterns: {
+          avgBedtime: '23:00',
+          avgWakeTime: '07:00',
+          difficulties: [],
+        },
+        stressTriggers: [],
+      };
+
       const analysisRequest: MorningAnalysisRequest = {
         date: new Date().toISOString().split('T')[0],
         todayBiometrics,
@@ -156,7 +209,7 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
           correlations: [],
         },
         userProfile: profile,
-        healthProfile,
+        healthProfile: healthProfile || defaultHealthProfile,
       };
 
       // Call morning analysis API
@@ -172,10 +225,16 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to generate analysis');
+        const errorData = await response.json().catch(() => null);
+        const errorMessage = errorData?.error || errorData?.message || 'Failed to generate analysis';
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+
+      if (!data || !data.analysis) {
+        throw new Error('Invalid response from analysis API');
+      }
 
       // Create daily plan from analysis
       const dailyPlan = {
@@ -223,6 +282,23 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
       onComplete();
     } catch (error) {
       console.error('Error performing analysis:', error);
+      Alert.alert(
+        'Analysis Failed',
+        error instanceof Error ? error.message : 'Failed to generate your daily plan. Please try again.',
+        [
+          {
+            text: 'Retry',
+            onPress: () => {
+              setCurrentStep('habits');
+            },
+          },
+          {
+            text: 'Cancel',
+            onPress: () => router.back(),
+            style: 'cancel',
+          },
+        ]
+      );
     }
   };
 
