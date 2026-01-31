@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useMorningRitualStore } from '@/stores/morningRitualStore';
@@ -42,6 +42,7 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
     completeSession,
     goToNextStep,
     hasHydrated,
+    clearSession,
   } = useMorningRitualStore();
 
   const { getYesterdayPlan } = useAIPlanStore();
@@ -50,6 +51,14 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
   const { getRecentReadings, getAverageHRV, getTrend } = useHrvStore();
 
   const yesterdayPlan = getYesterdayPlan();
+
+  // Clear completed sessions on mount
+  useEffect(() => {
+    if (currentSession && currentSession.completedAt) {
+      console.log('[MorningRitualWizard] Clearing completed session from:', currentSession.date);
+      clearSession();
+    }
+  }, []);
 
   const handleStart = () => {
     // Check if health profile exists before starting

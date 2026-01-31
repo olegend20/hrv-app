@@ -99,29 +99,17 @@ export default function ScreenshotReviewScreen() {
         }
       }
 
-      // Show success message
-      const screenshotTypes = imageUris.map((img: { type: string }) => img.type);
-      const hasRecovery = screenshotTypes.includes('recovery');
-      const hasSleep = screenshotTypes.includes('sleep');
-
-      let successMessage = 'Data synced successfully!\n';
-      if (hasRecovery) successMessage += `HRV: ${hrvValue}ms\n`;
-      if (hasSleep) successMessage += `Sleep: ${sleepHours || 0}h`;
-
-      Alert.alert(
-        'Success',
-        successMessage,
-        [
-          {
-            text: 'Generate Daily Plan',
-            onPress: () => router.push('/daily-plan'),
-          },
-          {
-            text: 'View Dashboard',
-            onPress: () => router.replace('/(tabs)'),
-          },
-        ]
-      );
+      // Navigate to habit questions to complete daily logging
+      router.push({
+        pathname: '/habit-questions',
+        params: {
+          date,
+          hrv: hrvValue.toString(),
+          sleepHours: sleepHours || '',
+          sleepQuality: sleepQuality || '',
+          recoveryScore: recoveryScore || '',
+        },
+      });
     } catch (error) {
       console.error('Error saving screenshot data:', error);
       Alert.alert(

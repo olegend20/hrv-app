@@ -68,9 +68,15 @@ export const useMorningRitualStore = create<MorningRitualState>()(
         const today = getTodayDate();
         const existingSession = get().currentSession;
 
-        // If there's an existing session for today, resume it
+        // If there's an existing session for today
         if (existingSession && existingSession.date === today) {
-          return;
+          // If it's completed, clear it and start new
+          if (existingSession.completedAt) {
+            // Fall through to create new session
+          } else {
+            // If incomplete, resume it
+            return;
+          }
         }
 
         // Create new session

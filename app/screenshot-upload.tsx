@@ -34,74 +34,82 @@ export default function ScreenshotUploadScreen() {
     };
   }, []);
 
-  const requestPermissions = async () => {
-    if (Platform.OS !== 'web') {
-      const { status: cameraStatus } =
-        await ImagePicker.requestCameraPermissionsAsync();
-      const { status: mediaStatus } =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (cameraStatus !== 'granted' || mediaStatus !== 'granted') {
-        Alert.alert(
-          'Permission Required',
-          'We need camera and photo library permissions to upload screenshots.'
-        );
-        return false;
-      }
-    }
-    return true;
-  };
-
   const pickImageFromGallery = async (type: 'recovery' | 'sleep') => {
     console.log(`[ScreenshotUpload] Pick ${type} from gallery button pressed`);
-    const hasPermission = await requestPermissions();
-    if (!hasPermission) {
-      console.log('[ScreenshotUpload] Gallery permission denied');
-      return;
+
+    // Request only media library permission
+    if (Platform.OS !== 'web') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'We need photo library permission to select screenshots.'
+        );
+        console.log('[ScreenshotUpload] Gallery permission denied');
+        return;
+      }
     }
 
-    console.log('[ScreenshotUpload] Launching image library');
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.8,
-      base64: false,
-    });
-
-    console.log('[ScreenshotUpload] Image library result:', result.canceled ? 'canceled' : 'selected');
-    if (!result.canceled && result.assets[0]) {
-      console.log('[ScreenshotUpload] Image URI set:', result.assets[0].uri);
-      setImages(prev => {
-        // Remove existing image of this type if any
-        const filtered = prev.filter(img => img.type !== type);
-        return [...filtered, { uri: result.assets[0].uri, type }];
+    try {
+      console.log('[ScreenshotUpload] Launching image library');
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false, // Disable editing to prevent freezing
+        quality: 1, // Use full quality for screenshot analysis
+        base64: false,
       });
+
+      console.log('[ScreenshotUpload] Image library result:', result.canceled ? 'canceled' : 'selected');
+      if (!result.canceled && result.assets[0]) {
+        console.log('[ScreenshotUpload] Image URI set:', result.assets[0].uri);
+        setImages(prev => {
+          // Remove existing image of this type if any
+          const filtered = prev.filter(img => img.type !== type);
+          return [...filtered, { uri: result.assets[0].uri, type }];
+        });
+      }
+    } catch (error) {
+      console.error('[ScreenshotUpload] Error picking image:', error);
+      Alert.alert('Error', 'Failed to select image. Please try again.');
     }
   };
 
   const takePhoto = async (type: 'recovery' | 'sleep') => {
     console.log(`[ScreenshotUpload] Take ${type} photo button pressed`);
-    const hasPermission = await requestPermissions();
-    if (!hasPermission) {
-      console.log('[ScreenshotUpload] Camera permission denied');
-      return;
+
+    // Request only camera permission
+    if (Platform.OS !== 'web') {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'We need camera permission to take photos.'
+        );
+        console.log('[ScreenshotUpload] Camera permission denied');
+        return;
+      }
     }
 
-    console.log('[ScreenshotUpload] Launching camera');
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      quality: 0.8,
-      base64: false,
-    });
-
-    console.log('[ScreenshotUpload] Camera result:', result.canceled ? 'canceled' : 'photo taken');
-    if (!result.canceled && result.assets[0]) {
-      console.log('[ScreenshotUpload] Photo URI set:', result.assets[0].uri);
-      setImages(prev => {
-        // Remove existing image of this type if any
-        const filtered = prev.filter(img => img.type !== type);
-        return [...filtered, { uri: result.assets[0].uri, type }];
+    try {
+      console.log('[ScreenshotUpload] Launching camera');
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: false, // Disable editing to prevent freezing
+        quality: 1, // Use full quality for screenshot analysis
+        base64: false,
       });
+
+      console.log('[ScreenshotUpload] Camera result:', result.canceled ? 'canceled' : 'photo taken');
+      if (!result.canceled && result.assets[0]) {
+        console.log('[ScreenshotUpload] Photo URI set:', result.assets[0].uri);
+        setImages(prev => {
+          // Remove existing image of this type if any
+          const filtered = prev.filter(img => img.type !== type);
+          return [...filtered, { uri: result.assets[0].uri, type }];
+        });
+      }
+    } catch (error) {
+      console.error('[ScreenshotUpload] Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo. Please try again.');
     }
   };
 
