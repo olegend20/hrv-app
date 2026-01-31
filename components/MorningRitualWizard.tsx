@@ -322,11 +322,27 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
       );
 
       console.log('[MorningRitualWizard] API response status:', response.status);
+      console.log('[MorningRitualWizard] API response statusText:', response.statusText);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         console.error('[MorningRitualWizard] API error response:', errorData);
-        const errorMessage = errorData?.error || errorData?.message || 'Failed to generate analysis';
+        console.error('[MorningRitualWizard] Response headers:', Object.fromEntries(response.headers.entries()));
+
+        // Provide specific error based on status code
+        let errorMessage = 'Failed to generate analysis';
+        if (response.status === 404) {
+          errorMessage = 'API endpoint not found (404). The morning-analysis API may not be deployed yet.';
+        } else if (response.status === 500) {
+          errorMessage = errorData?.message || errorData?.error || 'Internal server error (500)';
+        } else if (response.status === 400) {
+          errorMessage = errorData?.error || 'Bad request (400) - Invalid data sent to API';
+        } else if (response.status === 429) {
+          errorMessage = 'Rate limit exceeded (429)';
+        } else {
+          errorMessage = errorData?.error || errorData?.message || `HTTP ${response.status}: ${response.statusText}`;
+        }
+
         throw new Error(errorMessage);
       }
 
