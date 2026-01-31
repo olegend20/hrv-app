@@ -301,11 +301,17 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
       };
 
       // Call morning analysis API
+      const apiUrl = `${process.env.EXPO_PUBLIC_API_URL}/api/ai/morning-analysis`;
       console.log('[MorningRitualWizard] Calling morning analysis API');
-      console.log('[MorningRitualWizard] API URL:', `${process.env.EXPO_PUBLIC_API_URL}/api/ai/morning-analysis`);
+      console.log('[MorningRitualWizard] API URL:', apiUrl);
+      console.log('[MorningRitualWizard] EXPO_PUBLIC_API_URL:', process.env.EXPO_PUBLIC_API_URL);
+
+      if (!process.env.EXPO_PUBLIC_API_URL) {
+        throw new Error('API URL not configured. Please set EXPO_PUBLIC_API_URL environment variable.');
+      }
 
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/ai/morning-analysis`,
+        apiUrl,
         {
           method: 'POST',
           headers: {
@@ -376,9 +382,20 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
       onComplete();
     } catch (error) {
       console.error('Error performing analysis:', error);
+
+      // Show detailed error for debugging
+      let errorMessage = 'Unknown error occurred';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+        });
+      }
+
       Alert.alert(
         'Analysis Failed',
-        error instanceof Error ? error.message : 'Failed to generate your daily plan. Please try again.',
+        `Error: ${errorMessage}\n\nPlease check the console for more details or try again.`,
         [
           {
             text: 'Retry',
