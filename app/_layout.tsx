@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { useUserStore } from '@/stores/userStore';
+import { useHealthProfileStore } from '@/stores/healthProfileStore';
 
 export {
   ErrorBoundary,
@@ -47,6 +48,7 @@ function RootLayoutNav() {
 
   const profile = useUserStore((state) => state.profile);
   const hasHydrated = useUserStore((state) => state.hasHydrated);
+  const { healthProfile } = useHealthProfileStore();
 
   useEffect(() => {
     if (!hasHydrated) return;
@@ -67,19 +69,27 @@ function RootLayoutNav() {
     ];
     const inAllowedScreen = allowedScreens.includes(segments[0]);
 
+    // Check if health profile is complete
+    const hasHealthProfile = healthProfile && healthProfile.primaryGoal;
+
     // If no profile, redirect to onboarding
     if (!profile && !inOnboarding) {
       router.replace('/onboarding');
     }
-    // If has profile but in onboarding, go to tabs
-    else if (profile && inOnboarding) {
+    // If has profile but missing health profile, allow onboarding access
+    else if (profile && !hasHealthProfile && inOnboarding) {
+      // Allow them to stay in onboarding to complete health profile
+      return;
+    }
+    // If has complete profile (including health) but in onboarding, go to tabs
+    else if (profile && hasHealthProfile && inOnboarding) {
       router.replace('/(tabs)');
     }
     // If has profile and not in allowed location, go to tabs
     else if (profile && !inTabs && !inOnboarding && !inImport && !inAllowedScreen) {
       router.replace('/(tabs)');
     }
-  }, [profile, hasHydrated, segments]);
+  }, [profile, hasHydrated, segments, healthProfile]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
