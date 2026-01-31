@@ -118,8 +118,8 @@ export function MultiScreenshotUpload({ onComplete, onBack }: MultiScreenshotUpl
         })
       );
 
-      // Call screenshot analysis API
-      const apiResponse = await fetch(
+      // Call screenshot analysis API - try new format first
+      let apiResponse = await fetch(
         `${process.env.EXPO_PUBLIC_API_URL}/api/ai/screenshot-analysis`,
         {
           method: 'POST',
@@ -132,6 +132,28 @@ export function MultiScreenshotUpload({ onComplete, onBack }: MultiScreenshotUpl
           }),
         }
       );
+
+      // If API returns error about missing imageBase64, use old format (single image)
+      if (!apiResponse.ok) {
+        const errorData = await apiResponse.json().catch(() => null);
+        if (errorData?.error?.includes('imageBase64')) {
+          console.log('[MultiScreenshotUpload] Falling back to old API format (single image)');
+          // Use first image only for old API
+          apiResponse = await fetch(
+            `${process.env.EXPO_PUBLIC_API_URL}/api/ai/screenshot-analysis`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                imageBase64: imageData[0].imageBase64,
+                date: new Date().toISOString().split('T')[0],
+              }),
+            }
+          );
+        }
+      }
 
       if (!apiResponse.ok) {
         const errorData = await apiResponse.json().catch(() => null);

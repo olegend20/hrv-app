@@ -18,7 +18,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { userId, images, date, userContext } = req.body;
+  const { userId, images, imageBase64, date, userContext } = req.body;
+
+  // Backward compatibility: convert old single-image format to new multi-image format
+  let imageArray = images;
+  if (!imageArray && imageBase64) {
+    // Old format: { imageBase64, date }
+    imageArray = [{ type: 'recovery', imageBase64 }];
+  }
 
   // Check rate limit
   const rateLimitResult = checkRateLimit(userId || 'anonymous', 10);
@@ -36,8 +43,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
   res.setHeader('X-RateLimit-Reset', rateLimitResult.resetTime.toString());
 
-  if (!images || !Array.isArray(images) || images.length === 0 || !date) {
-    return res.status(400).json({ error: 'images array and date are required' });
+  if (!imageArray || !Array.isArray(imageArray) || imageArray.length === 0 || !date) {
+    return res.status(400).json({ error: 'images array (or imageBase64) and date are required' });
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
@@ -51,12 +58,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const openai = new OpenAI({ apiKey });
 
     // Build description of what screenshots we're analyzing
-    const imageTypes = images.map((img: any) => img.type).join(' and ');
+    const imageTypes = imageArray.map((img: any) => img.type).join(' and ');
 
     // System prompt for screenshot analysis
     const systemPrompt = `You are analyzing WHOOP screenshots (${imageTypes}) to extract health metrics.
 
-You will receive ${images.length} screenshot(s). Extract the following data:
+You will receive ${imageArray.length} screenshot(s). Extract the following data:
 
 From Recovery Screenshot (if provided):
 - HRV (ms): Look for "HRV" or "Heart Rate Variability" in milliseconds
@@ -98,7 +105,7 @@ If any value is unclear or not visible in either screenshot, set it to null. Be 
     ];
 
     // Add each image to the content array
-    images.forEach((img: any) => {
+    imageArray.forEach((img: any) => {
       userContent.push({
         type: 'image_url',
         image_url: {
