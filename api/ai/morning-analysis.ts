@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import OpenAI from 'openai';
 import { checkRateLimit } from './rateLimit';
 import type { MorningAnalysisRequest, MorningAnalysisResponse } from '../../types';
-import { generateMorningAnalysis } from '../../lib/analysis/morningAnalysisEngine';
+import { generateMorningAnalysis } from './morningAnalysisEngine';
 
 /**
  * Comprehensive Morning Analysis API
