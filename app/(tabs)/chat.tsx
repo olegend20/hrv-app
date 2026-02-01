@@ -17,6 +17,7 @@ import { useUserStore } from '@/stores/userStore';
 import { useHealthProfileStore } from '@/stores/healthProfileStore';
 import { useHrvStore } from '@/stores/hrvStore';
 import { useHabitStore } from '@/stores/habitStore';
+import { useAIPlanStore } from '@/stores/aiPlanStore';
 import { ChatMessage } from '@/types';
 
 export default function ChatScreen() {
@@ -29,6 +30,7 @@ export default function ChatScreen() {
   const healthProfile = useHealthProfileStore((state) => state.healthProfile);
   const readings = useHrvStore((state) => state.readings);
   const habits = useHabitStore((state) => state.entries);
+  const { getTodayPlan, getRecentPlans } = useAIPlanStore();
 
   const {
     conversations,
@@ -78,6 +80,10 @@ export default function ChatScreen() {
     // Get recent habits (last 7 days)
     const recentHabits = habits.slice(-7);
 
+    // Get recent plans and today's plan
+    const recentPlans = getRecentPlans(7);
+    const todaysPlan = getTodayPlan();
+
     return {
       userProfile: profile,
       healthProfile,
@@ -88,6 +94,8 @@ export default function ChatScreen() {
         targetHRV: profile?.targetPercentile || 50,
         targetPercentile: profile?.targetPercentile || 50,
       },
+      recentPlans,
+      todaysPlan,
     };
   };
 
