@@ -17,6 +17,7 @@ import { useHrvStore } from '@/stores/hrvStore';
 import { useScreenshotStore } from '@/stores/screenshotStore';
 import { useMorningRitualStore } from '@/stores/morningRitualStore';
 import { InsightsCarousel } from '@/components/InsightsCarousel';
+import { DeepDiveAnalysis } from '@/components/DeepDiveAnalysis';
 import { DailyPlan, MorningAnalysisResponse } from '@/types';
 
 export default function DailyPlanScreen() {
@@ -297,6 +298,11 @@ export default function DailyPlanScreen() {
         {/* Insights Carousel - if available */}
         {analysisData && (
           <InsightsCarousel analysis={analysisData} />
+        )}
+
+        {/* Deep Dive Analysis - if available */}
+        {analysisData?.deepDive && (
+          <DeepDiveAnalysis deepDive={analysisData.deepDive} />
         )}
 
         {/* Focus Area Header */}
