@@ -27,6 +27,8 @@ export function MultiScreenshotUpload({ onComplete, onBack }: MultiScreenshotUpl
   const [analyzing, setAnalyzing] = useState(false);
 
   const pickImageFromGallery = async (type: 'recovery' | 'sleep') => {
+    console.log(`[MultiScreenshotUpload] Picking ${type} image from gallery`);
+
     if (Platform.OS !== 'web') {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
@@ -39,26 +41,37 @@ export function MultiScreenshotUpload({ onComplete, onBack }: MultiScreenshotUpl
     }
 
     try {
+      console.log(`[MultiScreenshotUpload] Launching image picker for ${type}`);
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
-        quality: 1,
+        quality: 0.8, // Reduced quality to prevent memory issues
         base64: false,
       });
 
+      console.log(`[MultiScreenshotUpload] Image picker result for ${type}:`, {
+        canceled: result.canceled,
+        hasAssets: !!result.assets?.[0],
+      });
+
       if (!result.canceled && result.assets[0]) {
+        console.log(`[MultiScreenshotUpload] Adding ${type} image to state`);
         setImages((prev) => {
           const filtered = prev.filter((img) => img.type !== type);
-          return [...filtered, { uri: result.assets[0].uri, type }];
+          const newImages = [...filtered, { uri: result.assets[0].uri, type }];
+          console.log(`[MultiScreenshotUpload] Total images after adding ${type}:`, newImages.length);
+          return newImages;
         });
       }
     } catch (error) {
-      console.error('Error picking image:', error);
+      console.error(`[MultiScreenshotUpload] Error picking ${type} image:`, error);
       Alert.alert('Error', 'Failed to select image. Please try again.');
     }
   };
 
   const takePhoto = async (type: 'recovery' | 'sleep') => {
+    console.log(`[MultiScreenshotUpload] Taking ${type} photo with camera`);
+
     if (Platform.OS !== 'web') {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
@@ -68,20 +81,29 @@ export function MultiScreenshotUpload({ onComplete, onBack }: MultiScreenshotUpl
     }
 
     try {
+      console.log(`[MultiScreenshotUpload] Launching camera for ${type}`);
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: false,
-        quality: 1,
+        quality: 0.8, // Reduced quality to prevent memory issues
         base64: false,
       });
 
+      console.log(`[MultiScreenshotUpload] Camera result for ${type}:`, {
+        canceled: result.canceled,
+        hasAssets: !!result.assets?.[0],
+      });
+
       if (!result.canceled && result.assets[0]) {
+        console.log(`[MultiScreenshotUpload] Adding ${type} photo to state`);
         setImages((prev) => {
           const filtered = prev.filter((img) => img.type !== type);
-          return [...filtered, { uri: result.assets[0].uri, type }];
+          const newImages = [...filtered, { uri: result.assets[0].uri, type }];
+          console.log(`[MultiScreenshotUpload] Total images after adding ${type}:`, newImages.length);
+          return newImages;
         });
       }
     } catch (error) {
-      console.error('Error taking photo:', error);
+      console.error(`[MultiScreenshotUpload] Error taking ${type} photo:`, error);
       Alert.alert('Error', 'Failed to take photo. Please try again.');
     }
   };
@@ -95,30 +117,64 @@ export function MultiScreenshotUpload({ onComplete, onBack }: MultiScreenshotUpl
     setAnalyzing(true);
 
     try {
-      // Convert images to base64
+      console.log('[MultiScreenshotUpload] Starting analysis of', images.length, 'screenshots');
+
+      // Convert images to base64 with timeout and better error handling
       const imageData = await Promise.all(
-        images.map(async (img) => {
-          const response = await fetch(img.uri);
-          const blob = await response.blob();
+        images.map(async (img, index) => {
+          console.log(`[MultiScreenshotUpload] Converting image ${index + 1} (${img.type}) to base64`);
 
-          const reader = new FileReader();
-          reader.readAsDataURL(blob);
+          try {
+            // Add timeout to fetch
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-          await new Promise((resolve, reject) => {
-            reader.onloadend = resolve;
-            reader.onerror = reject;
-          });
+            const response = await fetch(img.uri, { signal: controller.signal });
+            clearTimeout(timeoutId);
 
-          const base64Image = (reader.result as string).split(',')[1];
+            const blob = await response.blob();
+            console.log(`[MultiScreenshotUpload] Image ${index + 1} blob size:`, blob.size);
 
-          return {
-            type: img.type,
-            imageBase64: `data:image/jpeg;base64,${base64Image}`,
-          };
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+
+            await new Promise((resolve, reject) => {
+              const timeoutId = setTimeout(() => {
+                reject(new Error('FileReader timeout after 30 seconds'));
+              }, 30000);
+
+              reader.onloadend = () => {
+                clearTimeout(timeoutId);
+                resolve(undefined);
+              };
+              reader.onerror = () => {
+                clearTimeout(timeoutId);
+                reject(reader.error);
+              };
+            });
+
+            const base64Image = (reader.result as string).split(',')[1];
+            console.log(`[MultiScreenshotUpload] Image ${index + 1} converted successfully`);
+
+            return {
+              type: img.type,
+              imageBase64: `data:image/jpeg;base64,${base64Image}`,
+            };
+          } catch (error) {
+            console.error(`[MultiScreenshotUpload] Error converting image ${index + 1}:`, error);
+            throw new Error(`Failed to convert ${img.type} screenshot: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
         })
       );
 
-      // Call screenshot analysis API - try new format first
+      console.log('[MultiScreenshotUpload] All images converted successfully');
+
+      // Call screenshot analysis API - try new format first with timeout
+      console.log('[MultiScreenshotUpload] Calling screenshot-analysis API');
+
+      const controller = new AbortController();
+      const apiTimeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+
       let apiResponse = await fetch(
         `${process.env.EXPO_PUBLIC_API_URL}/api/ai/screenshot-analysis`,
         {
@@ -130,8 +186,18 @@ export function MultiScreenshotUpload({ onComplete, onBack }: MultiScreenshotUpl
             images: imageData,
             date: new Date().toISOString().split('T')[0],
           }),
+          signal: controller.signal,
         }
-      );
+      ).catch((error) => {
+        clearTimeout(apiTimeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error('API request timed out after 60 seconds. Please try again.');
+        }
+        throw error;
+      });
+
+      clearTimeout(apiTimeoutId);
+      console.log('[MultiScreenshotUpload] API response status:', apiResponse.status);
 
       // If API returns error about missing imageBase64, use old format (single image)
       if (!apiResponse.ok) {
