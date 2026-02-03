@@ -136,13 +136,23 @@ export default function ChatScreen() {
     setIsTyping(true);
 
     try {
+      console.log('[Chat] Building context for message:', messageCopy);
       // Build context
       const context = buildContextPayload();
+      console.log('[Chat] Context built:', {
+        hasProfile: !!context.userProfile,
+        hasHealthProfile: !!context.healthProfile,
+        hasHrvStats: !!context.hrvStats,
+        recentPlansCount: context.recentPlans?.length || 0,
+        hasTodaysPlan: !!context.todaysPlan,
+      });
 
       // Get conversation history
       const conversationHistory = currentConversation?.messages || [];
+      console.log('[Chat] Conversation history length:', conversationHistory.length);
 
       // Call streaming chat API
+      console.log('[Chat] Calling API:', `${process.env.EXPO_PUBLIC_API_URL}/api/ai/chat`);
       const response = await fetch(
         `${process.env.EXPO_PUBLIC_API_URL}/api/ai/chat`,
         {
@@ -159,11 +169,22 @@ export default function ChatScreen() {
         }
       );
 
+      console.log('[Chat] API response status:', response.status);
+      console.log('[Chat] API response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error('Failed to get response from AI');
+        const errorText = await response.text().catch(() => 'Could not read error');
+        console.error('[Chat] API error response:', errorText);
+        throw new Error(`Failed to get response from AI (${response.status}): ${errorText}`);
       }
 
       const reader = response.body?.getReader();
+      if (!reader) {
+        console.error('[Chat] No reader available from response body');
+        throw new Error('Response body is not readable');
+      }
+
+      console.log('[Chat] Starting to read streaming response');
       const decoder = new TextDecoder();
 
       let assistantContent = '';
@@ -179,10 +200,18 @@ export default function ChatScreen() {
 
       addMessage(currentConversationId, assistantMessage);
 
+      let chunkCount = 0;
+      let tokenCount = 0;
+
       // Stream the response
       while (reader) {
         const { done, value } = await reader.read();
-        if (done) break;
+        chunkCount++;
+
+        if (done) {
+          console.log('[Chat] Stream done. Total chunks:', chunkCount, 'Total tokens:', tokenCount);
+          break;
+        }
 
         const chunk = decoder.decode(value);
         const lines = chunk.split('\n');
@@ -192,6 +221,7 @@ export default function ChatScreen() {
             try {
               const data = JSON.parse(line.slice(6));
               if (data.token) {
+                tokenCount++;
                 assistantContent += data.token;
                 // Update the message content
                 useChatStore.setState((state) => ({
@@ -210,15 +240,24 @@ export default function ChatScreen() {
                 }));
               }
               if (data.done) {
+                console.log('[Chat] Received done signal from stream');
                 break;
               }
+              if (data.error) {
+                console.error('[Chat] Error in stream:', data.message);
+                throw new Error(data.message || 'Stream error');
+              }
             } catch (e) {
-              // Ignore parse errors for partial data
+              // Only log if it's not a JSON parse error (expected for partial data)
+              if (!(e instanceof SyntaxError)) {
+                console.error('[Chat] Error parsing stream data:', e);
+              }
             }
           }
         }
       }
 
+      console.log('[Chat] Final assistant content length:', assistantContent.length);
       setIsTyping(false);
     } catch (error) {
       console.error('Error sending message:', error);
