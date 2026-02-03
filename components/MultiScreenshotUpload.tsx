@@ -227,6 +227,26 @@ export function MultiScreenshotUpload({ onComplete, onBack }: MultiScreenshotUpl
       }
 
       const data = await apiResponse.json();
+      console.log('[MultiScreenshotUpload] API response data:', JSON.stringify(data, null, 2));
+
+      // Validate that we actually got extracted data
+      if (!data || !data.extractedData) {
+        console.error('[MultiScreenshotUpload] API returned no extractedData');
+        throw new Error('API returned no data. Please try again or use clearer screenshots.');
+      }
+
+      // Validate that extractedData has some useful fields
+      const hasValidData = data.extractedData.hrv ||
+                          data.extractedData.recoveryScore ||
+                          data.extractedData.sleepHours ||
+                          data.extractedData.sleepQuality;
+
+      if (!hasValidData) {
+        console.error('[MultiScreenshotUpload] API extractedData is empty:', data.extractedData);
+        throw new Error('Could not extract any data from screenshots. Please ensure screenshots are clear and contain WHOOP data.');
+      }
+
+      console.log('[MultiScreenshotUpload] Extracted data validated successfully');
 
       // Create ScreenshotData objects
       const recoveryImg = images.find((img) => img.type === 'recovery');

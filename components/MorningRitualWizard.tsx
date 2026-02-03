@@ -217,29 +217,47 @@ export function MorningRitualWizard({ onComplete }: MorningRitualWizardProps) {
       const recoveryData = currentSession.screenshots.recovery?.extractedData;
       const sleepData = currentSession.screenshots.sleep?.extractedData;
 
-      console.log('[MorningRitualWizard] Has recoveryData:', !!recoveryData);
-      console.log('[MorningRitualWizard] Has sleepData:', !!sleepData);
+      console.log('[MorningRitualWizard] Recovery screenshot:', JSON.stringify(currentSession.screenshots.recovery, null, 2));
+      console.log('[MorningRitualWizard] Sleep screenshot:', JSON.stringify(currentSession.screenshots.sleep, null, 2));
+      console.log('[MorningRitualWizard] Recovery extractedData:', JSON.stringify(recoveryData, null, 2));
+      console.log('[MorningRitualWizard] Sleep extractedData:', JSON.stringify(sleepData, null, 2));
       console.log('[MorningRitualWizard] Has morningContext:', !!currentSession.morningContext);
 
-      if (!recoveryData && !sleepData) {
-        console.error('No biometric data extracted from screenshots');
+      // Check if we have actual data, not just empty objects
+      const hasRecoveryData = recoveryData && (
+        recoveryData.hrv ||
+        recoveryData.recoveryScore ||
+        recoveryData.restingHR ||
+        recoveryData.strain
+      );
+      const hasSleepData = sleepData && (
+        sleepData.sleepHours ||
+        sleepData.sleepQuality
+      );
+
+      if (!hasRecoveryData && !hasSleepData) {
+        console.error('[MorningRitualWizard] No valid biometric data in screenshots');
+        console.error('[MorningRitualWizard] recoveryData:', recoveryData);
+        console.error('[MorningRitualWizard] sleepData:', sleepData);
         Alert.alert(
-          'Error',
-          'Could not extract data from screenshots. Please try again with clearer images.',
-          [{ text: 'OK' }]
+          'No Data Found',
+          'Could not find any biometric data in the uploaded screenshots. Please upload clearer screenshots that show your WHOOP data.',
+          [{ text: 'OK', onPress: () => setCurrentStep('screenshots') }]
         );
-        setCurrentStep('screenshots');
         return;
       }
 
+      // Use extracted data with reasonable fallbacks
       const todayBiometrics = {
         hrv: recoveryData?.hrv || 50,
         recoveryScore: recoveryData?.recoveryScore || 50,
-        sleepHours: sleepData?.sleepHours || 7,
-        sleepQuality: sleepData?.sleepQuality || 70,
+        sleepHours: sleepData?.sleepHours || (currentSession.morningContext?.sleepRating ? currentSession.morningContext.sleepRating * 1.5 : 7),
+        sleepQuality: sleepData?.sleepQuality || (currentSession.morningContext?.sleepRating ? currentSession.morningContext.sleepRating * 20 : 70),
         restingHR: recoveryData?.restingHR || 60,
-        yesterdayStrain: recoveryData?.strain,
+        yesterdayStrain: recoveryData?.strain || 0,
       };
+
+      console.log('[MorningRitualWizard] Today biometrics:', todayBiometrics);
 
       // Get historical data
       const recentReadings = getRecentReadings(30);
